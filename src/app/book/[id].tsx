@@ -4,12 +4,13 @@ import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Spacing } from '@/constants/theme';
+import { saveAppointment } from '@/utils/appointmentStorage';
 
 export default function BookingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>() || {};
@@ -49,6 +50,7 @@ export default function BookingScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isDateSelected, setIsDateSelected] = useState(false);
   const [isTimeSelected, setIsTimeSelected] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Minimum date is today (prevent past dates)
   const minDate = new Date();
@@ -90,26 +92,45 @@ export default function BookingScreen() {
     setShowTimePicker(true);
   };
 
-  const handleBookAppointment = () => {
+  const handleBookAppointment = async () => {
     if (!isDateSelected || !isTimeSelected) {
       alert('Please select both date and time');
       return;
     }
 
-    // Navigate to confirmation screen with appointment details
-    const dateString = date ? date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }) : '';
-    const queryString = new URLSearchParams({
-      doctorName: selectedDoctor.name,
-      specialty: selectedDoctor.specialty,
-      date: dateString,
-      time: time || '',
-    }).toString();
+    setIsSaving(true);
+    try {
+      const dateString = date ? date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }) : '';
 
-    router.push(`/book/confirmation?${queryString}`);
+      const appointmentData = {
+        doctorId: selectedDoctor.id,
+        doctorName: selectedDoctor.name,
+        specialty: selectedDoctor.specialty,
+        date: dateString,
+        time: time || '',
+      };
+
+      await saveAppointment(appointmentData);
+
+      // Navigate to confirmation screen with appointment details
+      const queryString = new URLSearchParams({
+        doctorName: selectedDoctor.name,
+        specialty: selectedDoctor.specialty,
+        date: dateString,
+        time: time || '',
+      }).toString();
+
+      router.push(`/book/confirmation?${queryString}`);
+    } catch (error) {
+      console.error('Failed to save appointment:', error);
+      Alert.alert('Error', 'Failed to save appointment. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatDateForDisplay = (date: Date): string => {
@@ -160,7 +181,7 @@ export default function BookingScreen() {
         </Link>
 
         <Pressable
-          style={[styles.bookButton, !isDateSelected || !isTimeSelected ? styles.disabledButton : {}]}
+          style={[styles.bookButton, (!isDateSelected || !isTimeSelected || isSaving) ? styles.disabledButton : {}]}
           onPress={handleBookAppointment}
         >
           <PlaceholderButton label="Book Appointment" />
