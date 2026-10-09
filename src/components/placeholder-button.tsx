@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -6,13 +7,20 @@ import { Spacing } from '@/constants/theme';
 
 type PlaceholderButtonProps = {
   label: string;
+  onPress?: () => void;
 };
 
-export function PlaceholderButton({ label }: PlaceholderButtonProps) {
+export function PlaceholderButton({ label, onPress }: PlaceholderButtonProps) {
+  const ButtonComponent = onPress ? TouchableOpacity : ThemedView;
+
   return (
-    <ThemedView type="backgroundSelected" style={styles.button}>
+    <ButtonComponent
+      type="backgroundSelected"
+      style={styles.button}
+      onPress={onPress}
+    >
       <ThemedText type="smallBold">{label}</ThemedText>
-    </ThemedView>
+    </ButtonComponent>
   );
 }
 
