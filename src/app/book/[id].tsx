@@ -7,6 +7,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Link } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useState } from 'react';
 import { Spacing } from '@/constants/theme';
 
 export default function BookingScreen() {
@@ -40,6 +42,77 @@ export default function BookingScreen() {
     nextSlot: 'Not available'
   };
 
+  const [date, setDate] = useState<Date | null>(null);
+  const [time, setTime] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isDateSelected, setIsDateSelected] = useState(false);
+  const [isTimeSelected, setIsTimeSelected] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Minimum date is today (prevent past dates)
+  const minDate = new Date();
+  minDate.setHours(0, 0, 0, 0);
+
+  // Generate time slots from 9:00 AM to 5:00 PM in 30-minute increments
+  const timeSlots = [];
+  for (let hour = 9; hour <= 17; hour++) {
+    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+    timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+  }
+
+  const handleDateChange = (_event: any, selectedDate: any) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const selectedDateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+      setDate(selectedDateObj);
+      setIsDateSelected(true);
+    }
+  };
+
+  const handleTimeChange = (_event: any, selectedDate: any) => {
+    setShowTimePicker(false);
+    if (selectedDate) {
+      const selectedDateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+      const hours = selectedDateObj.getHours();
+      const minutes = selectedDateObj.getMinutes();
+      const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      setTime(timeString);
+      setIsTimeSelected(true);
+    }
+  };
+
+  const handleShowDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
+  const handleShowTimePicker = () => {
+    setShowTimePicker(true);
+  };
+
+  const handleBookAppointment = () => {
+    if (!isDateSelected || !isTimeSelected) {
+      alert('Please select both date and time');
+      return;
+    }
+
+    // Show success message
+    setShowSuccess(true);
+
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      setShowSuccess(false);
+    }, 3000);
+  };
+
+  const formatDateForDisplay = (date: Date): string => {
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
   return (
     <ScreenContainer inTabs title="Book Appointment" subtitle={selectedDoctor.name}>
       <SectionCard title="Selected Doctor">
@@ -49,13 +122,33 @@ export default function BookingScreen() {
       </SectionCard>
 
       <SectionCard title="Appointment Date & Time">
-        <ThemedView type="backgroundElement" style={styles.placeholderBox}>
-          <ThemedText>Date and time selection controls</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            (Implementation coming in future update)
-          </ThemedText>
-        </ThemedView>
-        <PlaceholderButton label="Select Date and Time" />
+        <View style={styles.dateTimeSection}>
+          <View style={styles.dateBox}>
+            <View style={styles.infoRow}>
+              <ThemedText themeColor="textSecondary">Date:</ThemedText>
+              <Pressable onPress={handleShowDatePicker}>
+                <ThemedText>{isDateSelected && date ? formatDateForDisplay(date) : 'Select Date'}</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.timeBox}>
+            <View style={styles.infoRow}>
+              <ThemedText themeColor="textSecondary">Time:</ThemedText>
+              <Pressable onPress={handleShowTimePicker}>
+                <ThemedText>{isTimeSelected && time ? time : 'Select Time'}</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {showSuccess && (
+          <ThemedView type="backgroundSelected" style={styles.successBox}>
+            <ThemedText type="smallBold" themeColor="text">
+              Appointment selected successfully!
+            </ThemedText>
+          </ThemedView>
+        )}
       </SectionCard>
 
       <View style={styles.buttonContainer}>
@@ -65,10 +158,34 @@ export default function BookingScreen() {
           </Pressable>
         </Link>
 
-        <Pressable style={[styles.bookButton, styles.disabledButton]}>
+        <Pressable
+          style={[styles.bookButton, !isDateSelected || !isTimeSelected ? styles.disabledButton : {}]}
+          onPress={handleBookAppointment}
+        >
           <PlaceholderButton label="Book Appointment" />
         </Pressable>
       </View>
+
+      {/* DateTime Pickers - hidden but controlled by state */}
+      {showDatePicker && (
+        <DateTimePicker
+          testID="datePicker"
+          value={date ?? new Date()}
+          mode="date"
+          display="default"
+          minimumDate={minDate}
+          onValueChange={handleDateChange}
+        />
+      )}
+      {showTimePicker && (
+        <DateTimePicker
+          testID="timePicker"
+          value={time ? new Date(`2020-01-01T${time}`) : new Date()}
+          mode="time"
+          display="default"
+          onValueChange={handleTimeChange}
+        />
+      )}
     </ScreenContainer>
   );
 }
@@ -79,6 +196,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: Spacing.two,
     borderRadius: Spacing.two,
+  },
+  dateTimeSection: {
+    padding: Spacing.three,
+  },
+  dateBox: {
+    flex: 1,
+    marginRight: Spacing.one,
+  },
+  timeBox: {
+    flex: 1,
+    marginLeft: Spacing.one,
+  },
+  pickerButton: {
+    marginTop: Spacing.one,
+    alignItems: 'flex-end',
   },
   buttonContainer: {
     marginTop: Spacing.three,
@@ -92,9 +224,21 @@ const styles = StyleSheet.create({
   bookButton: {
     flex: 1,
     marginLeft: Spacing.one / 2,
-    opacity: 0.5, // Disabled look
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  successBox: {
+    padding: Spacing.two,
+    marginVertical: Spacing.two,
+    alignItems: 'center',
+    borderRadius: Spacing.one,
+    backgroundColor: '#e6ffe6',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.one,
   },
 });
