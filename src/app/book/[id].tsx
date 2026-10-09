@@ -5,7 +5,7 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
@@ -13,6 +13,7 @@ import { Spacing } from '@/constants/theme';
 
 export default function BookingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>() || {};
+  const router = useRouter();
 
   // Mock doctor data - in a real app, this would come from a database or context
   const doctors = [
@@ -48,7 +49,6 @@ export default function BookingScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isDateSelected, setIsDateSelected] = useState(false);
   const [isTimeSelected, setIsTimeSelected] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   // Minimum date is today (prevent past dates)
   const minDate = new Date();
@@ -96,13 +96,20 @@ export default function BookingScreen() {
       return;
     }
 
-    // Show success message
-    setShowSuccess(true);
+    // Navigate to confirmation screen with appointment details
+    const dateString = date ? date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }) : '';
+    const queryString = new URLSearchParams({
+      doctorName: selectedDoctor.name,
+      specialty: selectedDoctor.specialty,
+      date: dateString,
+      time: time || '',
+    }).toString();
 
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 3000);
+    router.push(`/book/confirmation?${queryString}`);
   };
 
   const formatDateForDisplay = (date: Date): string => {
@@ -142,13 +149,7 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {showSuccess && (
-          <ThemedView type="backgroundSelected" style={styles.successBox}>
-            <ThemedText type="smallBold" themeColor="text">
-              Appointment selected successfully!
-            </ThemedText>
-          </ThemedView>
-        )}
+        {/* Removed the success message box */}
       </SectionCard>
 
       <View style={styles.buttonContainer}>
