@@ -208,6 +208,7 @@ export default function SleepScreen() {
           value={bedtime || new Date()}
           mode="time"
           display="default"
+          locale="en-US"
           onValueChange={handleBedtimeChange}
           onDismiss={hideBedtimePickerHandler}
           onNeutralButtonPress={hideBedtimePickerHandler}
@@ -218,6 +219,7 @@ export default function SleepScreen() {
           value={wakeTime || new Date()}
           mode="time"
           display="default"
+          locale="en-US"
           onValueChange={handleWakeTimeChange}
           onDismiss={hideWakeTimePickerHandler}
           onNeutralButtonPress={hideWakeTimePickerHandler}
