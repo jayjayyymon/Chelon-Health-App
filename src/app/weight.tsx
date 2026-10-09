@@ -104,9 +104,6 @@ export default function WeightScreen() {
               onChangeText={handleWeightChange}
             />
           </ThemedView>
-          <ThemedText type="small" numberOfLines={1}>
-            {inputWeight ? `Current: ${inputWeight} kg` : 'Enter weight above'}
-          </ThemedText>
         </ThemedView>
 
         <ThemedView type="backgroundSelected" style={{alignItems: 'center', marginTop: Spacing.two}}>
