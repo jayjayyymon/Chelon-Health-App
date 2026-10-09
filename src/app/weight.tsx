@@ -15,13 +15,24 @@ export default function WeightScreen() {
   const [currentWeight, setCurrentWeight] = useState(weightHistoryLocal[weightHistoryLocal.length - 1].kg);
   const [inputWeight, setInputWeight] = useState('');
   const [weightChangeStatus, setWeightChangeStatus] = useState<string | null>(null); // 'increased', 'decreased', or null
+  const [error, setError] = useState<string | null>(null);
 
   const latest = weightHistoryLocal[weightHistoryLocal.length - 1];
 
   const handleWeightChange = (text: string) => {
-    // Allow only numbers and one decimal point
-    const cleaned = text.replace(/[^0-9.]/g, '');
-    // Ensure only one decimal point
+    // Allow digits, decimal point, and minus sign
+    let cleaned = text.replace(/[^0-9.-]/g, '');
+    // Ensure at most one minus sign, and only at the beginning
+    if (cleaned.indexOf('-') > 0) {
+      // minus sign not at beginning
+      cleaned = cleaned.replace(/-/g, '');
+    }
+    // If there is a minus sign, keep only the first one
+    const minusIndex = cleaned.indexOf('-');
+    if (minusIndex > -1) {
+      cleaned = '-' + cleaned.slice(minusIndex + 1).replace(/-/g, '');
+    }
+    // Ensure at most one decimal point
     const parts = cleaned.split('.');
     if (parts.length > 2) {
       setInputWeight(parts[0] + '.' + parts.slice(1).join(''));
@@ -30,14 +41,33 @@ export default function WeightScreen() {
     }
   };
 
-  const handleLogWeight = () => {
-    const weightValue = parseFloat(inputWeight);
+  const validateWeight = (value: string): string | null => {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      return 'Please enter a weight';
+    }
+    if (trimmed.startsWith('-')) {
+      return 'Please enter a positive weight';
+    }
+    if (!/^\d+(\.\d{0,1})?$/.test(trimmed)) {
+      return 'Please enter a valid weight (up to one decimal place)';
+    }
+    const num = parseFloat(trimmed);
+    if (num < 1 || num > 500) {
+      return 'Weight must be between 1 kg and 500 kg';
+    }
+    return null;
+  };
 
-    // Validate that it's a positive number
-    if (isNaN(weightValue) || weightValue <= 0) {
-      alert('Please enter a valid positive weight');
+  const handleLogWeight = () => {
+    const validationError = validateWeight(inputWeight);
+    if (validationError) {
+      setError(validationError);
       return;
     }
+    setError(null);
+
+    const weightValue = parseFloat(inputWeight.trim());
 
     // Determine if weight increased or decreased
     const weightChange = weightValue - latest.kg;
@@ -99,11 +129,16 @@ export default function WeightScreen() {
             <TextInput
               style={{flex: 1, fontSize: 16, color: '#FFFFFF'}}
               placeholder="Enter weight"
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               value={inputWeight}
               onChangeText={handleWeightChange}
             />
           </ThemedView>
+          {error && (
+            <ThemedText type="small" style={{color: '#FF6B6B', marginTop: 4}}>
+              {error}
+            </ThemedText>
+          )}
         </ThemedView>
 
         <ThemedView type="backgroundSelected" style={{alignItems: 'center', marginTop: Spacing.two}}>
