@@ -1,14 +1,17 @@
 import { InfoRow } from '@/components/info-row';
-import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { userProfile } from '@/data/mock-data';
+import { PlaceholderButton } from '@/components/placeholder-button';
 
-import { View } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useHealthData } from '@/context/HealthDataContext';
 import { getAppointments } from '@/utils/appointmentStorage';
+import { loadProfile } from '@/utils/profileStorage';
+import type { UserProfile } from '@/utils/profileStorage';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { useIsFocused } from 'expo-router';
 
 export type Appointment = {
   id: string;
@@ -22,7 +25,17 @@ export type Appointment = {
 
 export default function ProfileScreen() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const { weightHistory } = useHealthData();
+  const router = useRouter();
+  const isFocused = useIsFocused();
+
+  // Calculate current weight from weight history (most recent entry)
+  const currentWeight = weightHistory.length > 0
+    ? weightHistory[weightHistory.length - 1].kg
+    : null;
 
   useEffect(() => {
     loadAppointments();
@@ -37,26 +50,67 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('Failed to load appointments:', error);
     } finally {
-      setLoading(false);
+      setAppointmentsLoading(false);
     }
   };
+
+  const loadUserProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const savedProfile = await loadProfile();
+      setProfile(savedProfile);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUserProfile();
+  }, []); // load on mount
+
+  useEffect(() => {
+    if (isFocused) {
+      loadUserProfile();
+    }
+  }, [isFocused]);
+
+  const isLoading = appointmentsLoading || profileLoading;
 
   return (
     <ScreenContainer inTabs title="Profile" subtitle="Local mock user. No authentication is used.">
       <SectionCard title="Account">
-        <InfoRow label="Name" value={userProfile.name} />
-        <InfoRow label="Age" value={`${userProfile.age}`} />
-        <InfoRow label="Height" value={`${userProfile.heightCm} cm`} />
+        {isLoading ? (
+          <ThemedText>Loading profile data...</ThemedText>
+        ) : profile ? (
+          <>
+            <InfoRow label="Name" value={profile.name} />
+            <InfoRow label="Age" value={`${profile.age}`} />
+            <InfoRow label="Weight" value={currentWeight !== null ? `${currentWeight} kg` : '-- kg'} />
+            <InfoRow label="Height" value={`${profile.heightCm} cm`} />
+          </>
+        ) : (
+          <ThemedText>Error loading profile</ThemedText>
+        )}
       </SectionCard>
 
       <SectionCard title="Goals">
-        <InfoRow label="Weight" value={`${userProfile.goalWeightKg} kg`} />
-        <InfoRow label="Water" value={`${userProfile.dailyWaterGoalL} L / day`} />
-        <InfoRow label="Steps" value={`${userProfile.dailyStepGoal}`} />
+        {isLoading ? (
+          <ThemedText>Loading...</ThemedText>
+        ) : profile ? (
+          <>
+            <InfoRow label="Weight" value={`${profile.goalWeightKg} kg`} />
+            <InfoRow label="Water" value={`${profile.dailyWaterGoalL} L / day`} />
+            <InfoRow label="Steps" value={`${profile.dailyStepGoal}`} />
+          </>
+        ) : (
+          <ThemedText>Error loading goals</ThemedText>
+        )}
       </SectionCard>
 
       <SectionCard title="Appointments">
-        {loading ? (
+        {appointmentsLoading ? (
           <ThemedText>Loading...</ThemedText>
         ) : appointments.length === 0 ? (
           <ThemedText>No upcoming appointments</ThemedText>
@@ -78,7 +132,7 @@ export default function ProfileScreen() {
         )}
       </SectionCard>
 
-      <PlaceholderButton label="Edit profile (placeholder)" />
+      <PlaceholderButton label="Edit profile" onPress={() => router.push('/edit-profile')} />
     </ScreenContainer>
   );
 }
