@@ -45,7 +45,7 @@ export const sleepLastNight = {
 };
 
 export const stepsToday = {
-  count: 6240,
+  count: 0,
   distanceKm: 4.6,
   activeMinutes: 48,
 };

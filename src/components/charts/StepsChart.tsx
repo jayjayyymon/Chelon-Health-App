@@ -7,12 +7,16 @@ type StepsChartProps = {
   width?: number;
   height?: number;
   showLabel?: boolean;
+  lineColor?: string;
+  textColor?: string;
 };
 
 export const StepsChart: React.FC<StepsChartProps> = ({
   width = 150,
   height = 100,
-  showLabel = true
+  showLabel = true,
+  lineColor = '#2ECC71',
+  textColor = '#333',
 }) => {
   const { stepsHistory } = useHealthData();
   const stepsData = stepsHistory;
@@ -20,7 +24,7 @@ export const StepsChart: React.FC<StepsChartProps> = ({
   if (stepsData.length === 0) {
     return (
       <View style={[styles.container, { width, height }]}>
-        <Text style={styles.noData}>No steps data</Text>
+        <Text style={[styles.noData, { color: textColor }]}>No steps data</Text>
       </View>
     );
   }
@@ -49,13 +53,13 @@ export const StepsChart: React.FC<StepsChartProps> = ({
   return (
     <View style={[styles.container, { width, height }]}>
       {showLabel && (
-        <Text style={styles.chartTitle}>Steps History</Text>
+        <Text style={[styles.chartTitle, { color: textColor }]}>Steps History</Text>
       )}
       <Svg width={width} height={height}>
         {/* Line */}
         <Polyline
           points={linePoints}
-          stroke="#2ECC71"
+          stroke={lineColor}
           strokeWidth={2}
           fill="none"
         />
@@ -66,7 +70,7 @@ export const StepsChart: React.FC<StepsChartProps> = ({
             cx={scaleX(index)}
             cy={scaleY(point.steps)}
             r={4}
-            fill={index === stepsData.length - 1 ? '#2ECC71' : '#BDC3C7'}
+            fill={index === stepsData.length - 1 ? lineColor : '#BDC3C7'}
           />
         ))}
         {/* Current value */}
@@ -74,7 +78,7 @@ export const StepsChart: React.FC<StepsChartProps> = ({
           x={width - 10}
           y={20}
           textAnchor="end"
-          fill="#333"
+          fill={textColor}
           fontSize={12}
         >
           {stepsData[stepsData.length - 1].steps} steps
