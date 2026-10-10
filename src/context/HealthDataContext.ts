@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
-import { weightHistory, waterSummary, sleepLastNight, stepsToday } from '@/data/mock-data';
+import { weightHistory, waterSummary, sleepLastNight, stepsToday, dietMeals } from '@/data/mock-data';
 
 export type WeightEntry = {
   id: string;
@@ -25,6 +25,13 @@ export type StepsEntry = {
   steps: number;
 };
 
+export type DietMeal = {
+  id: string;
+  name: string;
+  meal: string;
+  calories: number;
+};
+
 export type HealthDataContextType = {
   weightHistory: WeightEntry[];
   setWeightHistory: Dispatch<SetStateAction<WeightEntry[]>>;
@@ -38,6 +45,9 @@ export type HealthDataContextType = {
   stepsHistory: StepsEntry[];
   setStepsHistory: Dispatch<SetStateAction<StepsEntry[]>>;
   addSteps: (entry: StepsEntry) => void;
+  dietMeals: DietMeal[];
+  setDietMeals: Dispatch<SetStateAction<DietMeal[]>>;
+  addDietMeal: (meal: DietMeal) => void;
 };
 
 const HealthDataContext = createContext<HealthDataContextType | undefined>(undefined);
@@ -53,6 +63,7 @@ export const useHealthData = () => {
 export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
   const [weightHistoryState, setWeightHistoryState] = useState<WeightEntry[]>(weightHistory);
   const [waterGlassesState, setWaterGlassesState] = useState<WaterGlass[]>(waterSummary.glasses);
+  const [dietMealsState, setDietMealsState] = useState<DietMeal[]>(dietMeals);
 
   const generateMockSleepData = (): SleepEntry[] => {
     const baseDate = new Date(sleepLastNight.date);
@@ -134,6 +145,10 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const addDietMeal = (meal: DietMeal) => {
+    setDietMealsState(prev => [...prev, meal]);
+  };
+
   return React.createElement(
     HealthDataContext.Provider,
     {
@@ -150,6 +165,9 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
         stepsHistory: stepsHistoryState,
         setStepsHistory: setStepsHistoryState,
         addSteps: addSteps,
+        dietMeals: dietMealsState,
+        setDietMeals: setDietMealsState,
+        addDietMeal: addDietMeal,
       }
     },
     children

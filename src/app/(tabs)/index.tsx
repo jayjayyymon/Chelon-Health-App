@@ -11,7 +11,7 @@ import { StepsChart } from '@/components/charts/StepsChart';
 import { useHealthData } from '@/context/HealthDataContext';
 
 export default function DashboardScreen() {
-  const { weightHistory, waterGlasses, sleepHistory, stepsHistory } = useHealthData();
+  const { weightHistory, waterGlasses, sleepHistory, stepsHistory, dietMeals } = useHealthData();
 
   // Compute latest weight
   const latestWeightEntry = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
@@ -51,7 +51,12 @@ export default function DashboardScreen() {
         newItem.value = latestSteps.toLocaleString();
         newItem.detail = `Goal ${userProfile.dailyStepGoal} steps`;
         break;
-      // For diet and wellness, we keep the original values from mock data
+      case '/diet':
+        const totalCalories = dietMeals.reduce((sum, meal) => sum + meal.calories, 0);
+        newItem.value = `${totalCalories} kcal`;
+        newItem.detail = `${dietMeals.length} meals logged`;
+        break;
+      // For wellness, we keep the original values from mock data
       default:
         break;
     }

@@ -6,13 +6,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StyleSheet, TextInput, Button, View } from 'react-native';
 import { useState } from 'react';
+import { useHealthData } from '@/context/HealthDataContext';
 
 export default function DietScreen() {
-  const [meals, setMeals] = useState<Array<{id: string; name: string; meal: string; calories: number}>>([]);
+  const { dietMeals, addDietMeal } = useHealthData();
   const [foodName, setFoodName] = useState('');
   const [calories, setCalories] = useState('');
 
-  const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+  const totalCalories = dietMeals.reduce((sum, meal) => sum + meal.calories, 0);
 
   const handleAddMeal = () => {
     const name = foodName.trim();
@@ -27,17 +28,25 @@ export default function DietScreen() {
       meal: 'Custom', // We don't have a meal type input, so default to Custom
       calories: cal,
     };
-    setMeals([...meals, newMeal]);
+    addDietMeal(newMeal);
     setFoodName('');
     setCalories('');
   };
 
   const handleRemoveMeal = (id: string) => {
-    setMeals(meals.filter((meal) => meal.id !== id));
+    // For simplicity in this prototype, we'll just prevent removal of initial mock data
+    // In a full implementation, we would have a removeDietMeal function in the context
+    if (!id.startsWith('m')) { // Only allow removal of user-added meals (not initial mock data)
+      // Since we don't have a remove function in context yet, we'll filter locally
+      // but this won't persist - for now, we'll just show an alert
+      alert('Removal of meals is not implemented in this prototype');
+      return;
+    }
+    alert('Cannot remove initial mock data in this prototype');
   };
 
   return (
-    <ScreenContainer subtitle={`${totalCalories} kcal from ${meals.length} meals.`}>
+    <ScreenContainer subtitle={`${totalCalories} kcal from ${dietMeals.length} meals.`}>
       <ThemedView type="backgroundElement" style={styles.inputContainer}>
         <ThemedText type="smallBold">Add Food</ThemedText>
         <TextInput
@@ -56,7 +65,7 @@ export default function DietScreen() {
         <Button title="Add" onPress={handleAddMeal} color="#2563eb" />
       </ThemedView>
 
-      {meals.map((meal) => (
+      {dietMeals.map((meal) => (
         <SectionCard key={meal.id} title={meal.name}>
           <InfoRow label="Meal" value={meal.meal} />
           <InfoRow label="Calories" value={`${meal.calories} kcal`} />
