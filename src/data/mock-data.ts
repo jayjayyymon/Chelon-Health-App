@@ -32,11 +32,7 @@ export const waterSummary = {
   ],
 };
 
-export const dietMeals = [
-  { id: 'm1', name: 'Oatmeal with berries', meal: 'Breakfast', calories: 320 },
-  { id: 'm2', name: 'Chicken rice bowl', meal: 'Lunch', calories: 540 },
-  { id: 'm3', name: 'Greek yogurt', meal: 'Snack', calories: 150 },
-];
+export const dietMeals = [];
 
 export const weightHistory = [
   { id: 'wt1', date: 'Oct 1', kg: 71.2 },

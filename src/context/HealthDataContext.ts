@@ -48,6 +48,7 @@ export type HealthDataContextType = {
   dietMeals: DietMeal[];
   setDietMeals: Dispatch<SetStateAction<DietMeal[]>>;
   addDietMeal: (meal: DietMeal) => void;
+  removeDietMeal: (id: string) => void;
 };
 
 const HealthDataContext = createContext<HealthDataContextType | undefined>(undefined);
@@ -149,6 +150,10 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
     setDietMealsState(prev => [...prev, meal]);
   };
 
+  const removeDietMeal = (id: string) => {
+    setDietMealsState(prev => prev.filter(meal => meal.id !== id));
+  };
+
   return React.createElement(
     HealthDataContext.Provider,
     {
@@ -168,6 +173,7 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
         dietMeals: dietMealsState,
         setDietMeals: setDietMealsState,
         addDietMeal: addDietMeal,
+        removeDietMeal: removeDietMeal,
       }
     },
     children

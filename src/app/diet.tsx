@@ -1,15 +1,14 @@
 import { InfoRow } from '@/components/info-row';
-import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
-import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StyleSheet, TextInput, Button, View } from 'react-native';
+import { Spacing } from '@/constants/theme';
 import { useState } from 'react';
 import { useHealthData } from '@/context/HealthDataContext';
 
 export default function DietScreen() {
-  const { dietMeals, addDietMeal } = useHealthData();
+  const { dietMeals, addDietMeal, removeDietMeal } = useHealthData();
   const [foodName, setFoodName] = useState('');
   const [calories, setCalories] = useState('');
 
@@ -34,15 +33,7 @@ export default function DietScreen() {
   };
 
   const handleRemoveMeal = (id: string) => {
-    // For simplicity in this prototype, we'll just prevent removal of initial mock data
-    // In a full implementation, we would have a removeDietMeal function in the context
-    if (!id.startsWith('m')) { // Only allow removal of user-added meals (not initial mock data)
-      // Since we don't have a remove function in context yet, we'll filter locally
-      // but this won't persist - for now, we'll just show an alert
-      alert('Removal of meals is not implemented in this prototype');
-      return;
-    }
-    alert('Cannot remove initial mock data in this prototype');
+    removeDietMeal(id);
   };
 
   return (
@@ -65,19 +56,26 @@ export default function DietScreen() {
         <Button title="Add" onPress={handleAddMeal} color="#2563eb" />
       </ThemedView>
 
-      {dietMeals.map((meal) => (
-        <SectionCard key={meal.id} title={meal.name}>
-          <InfoRow label="Meal" value={meal.meal} />
-          <InfoRow label="Calories" value={`${meal.calories} kcal`} />
-          <Button
-            title="Remove"
-            onPress={() => handleRemoveMeal(meal.id)}
-            color="#dc2626"
-          />
-        </SectionCard>
-      ))}
-
-      <PlaceholderButton label="Add meal (placeholder)" />
+      {dietMeals.length > 0 ? (
+        dietMeals.map((meal) => (
+          <ThemedView type="backgroundElement" style={[styles.cardStyle]}>
+            <InfoRow label="Food Name" value={meal.name} />
+            <InfoRow label="Calories" value={`${meal.calories} kcal`} />
+            <Button
+              title="Remove"
+              onPress={() => handleRemoveMeal(meal.id)}
+              color="#dc2626"
+            />
+          </ThemedView>
+        ))
+      ) : (
+        <ThemedView type="backgroundElement" style={styles.emptyState}>
+          <ThemedText type="subtitle">No meals logged yet</ThemedText>
+          <ThemedText type="default">
+            Add your first meal to start tracking your daily calorie intake.
+          </ThemedText>
+        </ThemedView>
+      )}
     </ScreenContainer>
   );
 }
@@ -93,5 +91,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 8,
     backgroundColor: '#fff',
+  },
+  emptyState: {
+    padding: 24,
+    textAlign: 'center',
+  },
+  cardStyle: {
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
   },
 });
