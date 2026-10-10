@@ -9,19 +9,18 @@ import { ThemedView } from '@/components/themed-view';
 import { View } from 'react-native';
 import { Spacing } from '@/constants/theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useHealthData } from '@/context/HealthDataContext';
 
 export default function SleepScreen() {
+  const { sleepHistory, addSleep } = useHealthData();
   const [bedtime, setBedtime] = useState<Date | null>(null);
   const [wakeTime, setWakeTime] = useState<Date | null>(null);
   const [showBedtimePicker, setShowBedtimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
   const [sleepDuration, setSleepDuration] = useState<string | null>(null);
-  const [lastNightData, setLastNightData] = useState<{
-    date: string;
-    bedtime: string;
-    wakeTime: string;
-    duration: string;
-  } | null>(null);
+
+  // Get the most recent sleep entry for display
+  const mostRecentSleep = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
 
   const showBedtimePickerHandler = () => {
     setShowBedtimePicker(true);
@@ -52,8 +51,6 @@ export default function SleepScreen() {
       setWakeTime(selectedDate);
     }
   };
-
-
 
   // Calculate sleep duration
   const calculateSleepDuration = () => {
@@ -91,13 +88,17 @@ export default function SleepScreen() {
       const formattedBedtime = formatTimeForDisplay(bedtime);
       const formattedWakeTime = formatTimeForDisplay(wakeTime);
 
-      // Save to "last night" data
-      setLastNightData({
+      // Save to context as a sleep entry
+      const sleepEntry = {
+        id: `sleep-${Date.now()}`,
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        bedtime: formattedBedtime,
-        wakeTime: formattedWakeTime,
-        duration: durationString
-      });
+        hours: parseFloat((hours + minutes / 60).toFixed(1)), // Convert to hours as a float
+      };
+      addSleep(sleepEntry);
+
+      // Clear input times after saving
+      setBedtime(null);
+      setWakeTime(null);
     } catch (error) {
       setSleepDuration(null);
     }
@@ -134,13 +135,13 @@ export default function SleepScreen() {
   };
 
   return (
-    <ScreenContainer subtitle={lastNightData ? `Last night: ${lastNightData.duration}` : 'Enter your sleep times'}>
-      <SectionCard title={lastNightData ? lastNightData.date : 'Last Night'}>
-        {lastNightData ? (
+    <ScreenContainer subtitle={mostRecentSleep ? `Last night: ${mostRecentSleep.hours} hrs` : 'Enter your sleep times'}>
+      <SectionCard title={mostRecentSleep ? mostRecentSleep.date : 'Last Night'}>
+        {mostRecentSleep ? (
           <>
-            <InfoRow label="Duration" value={lastNightData.duration} />
-            <InfoRow label="Bedtime" value={lastNightData.bedtime} />
-            <InfoRow label="Wake" value={lastNightData.wakeTime} />
+            <InfoRow label="Duration" value={`${mostRecentSleep.hours} hrs`} />
+            <InfoRow label="Bedtime" value={bedtime ? formatTimeForDisplay(bedtime) : '--:-- --'} />
+            <InfoRow label="Wake" value={wakeTime ? formatTimeForDisplay(wakeTime) : '--:-- --'} />
           </>
         ) : (
           <>

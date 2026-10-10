@@ -1,33 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Svg, Polyline, Circle, Text as SvgText } from 'react-native-svg';
-import { sleepLastNight } from '@/data/mock-data';
-
-// Generate mock sleep data for the past 7 days
-const generateMockSleepData = () => {
-  const baseDate = new Date(sleepLastNight.date); // Assuming date format like 'Oct 7'
-  // We'll parse the date string, but for simplicity we'll generate fixed data
-  // Since the date format is like 'Oct 7', we'll assume it's in the current year.
-  // We'll create an array of 7 days going back from the base date.
-  const mockData = [];
-  const baseHours = sleepLastNight.hours;
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() - i);
-    // Format date as 'MMM d' (e.g., 'Oct 1')
-    const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    // Generate hours with some variation around baseHours
-    const hours = baseHours + (Math.random() - 0.5) * 2; // +/- 1 hour
-    mockData.push({
-      id: `sleep-${i}`,
-      date: dateString,
-      hours: parseFloat(hours.toFixed(1)),
-    });
-  }
-  // Reverse so that oldest is first
-  return mockData.reverse();
-};
+import { useHealthData } from '@/context/HealthDataContext';
 
 type SleepChartProps = {
   width?: number;
@@ -40,14 +14,8 @@ export const SleepChart: React.FC<SleepChartProps> = ({
   height = 100,
   showLabel = true
 }) => {
-  const sleepData = generateMockSleepData();
-  // Replace the last element (today) with the actual data
-  const actualIndex = sleepData.length - 1;
-  sleepData[actualIndex] = {
-    id: 'sleep-actual',
-    date: sleepLastNight.date,
-    hours: sleepLastNight.hours,
-  };
+  const { sleepHistory } = useHealthData();
+  const sleepData = sleepHistory;
 
   if (sleepData.length === 0) {
     return (
@@ -110,7 +78,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({
           fill="#333"
           fontSize={12}
         >
-          {sleepLastNight.hours} hrs
+          {sleepData[sleepData.length - 1].hours} hrs
         </SvgText>
       </Svg>
     </View>

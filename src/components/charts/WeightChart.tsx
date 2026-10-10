@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Svg, Polyline, Circle, Text as SvgText } from 'react-native-svg';
-import { weightHistory } from '@/data/mock-data';
+import { useHealthData } from '@/context/HealthDataContext';
 
 type WeightChartProps = {
   width?: number;
@@ -14,6 +14,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({
   height = 100,
   showLabel = true
 }) => {
+  const { weightHistory } = useHealthData();
+
   if (weightHistory.length === 0) {
     return (
       <View style={[styles.container, { width, height }]}>

@@ -1,29 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Svg, Polyline, Circle, Text as SvgText } from 'react-native-svg';
-import { stepsToday } from '@/data/mock-data';
-
-// Generate mock steps data for the past 7 days
-const generateMockStepsData = () => {
-  const baseDate = new Date(); // Assume today
-  const baseSteps = stepsToday.count;
-  const mockData = [];
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() - i);
-    const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    // Generate steps with some variation around baseSteps, but ensure it's positive
-    const steps = baseSteps + Math.floor((Math.random() - 0.5) * 2000); // +/- 1000 steps
-    mockData.push({
-      id: `steps-${i}`,
-      date: dateString,
-      steps: Math.max(steps, 1000), // minimum 1000 steps
-    });
-  }
-  // Reverse so that oldest is first
-  return mockData.reverse();
-};
+import { useHealthData } from '@/context/HealthDataContext';
 
 type StepsChartProps = {
   width?: number;
@@ -36,14 +14,8 @@ export const StepsChart: React.FC<StepsChartProps> = ({
   height = 100,
   showLabel = true
 }) => {
-  const stepsData = generateMockStepsData();
-  // Replace the last element (today) with the actual data
-  const actualIndex = stepsData.length - 1;
-  stepsData[actualIndex] = {
-    id: 'steps-actual',
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    steps: stepsToday.count,
-  };
+  const { stepsHistory } = useHealthData();
+  const stepsData = stepsHistory;
 
   if (stepsData.length === 0) {
     return (
@@ -106,7 +78,7 @@ export const StepsChart: React.FC<StepsChartProps> = ({
           fill="#333"
           fontSize={12}
         >
-          {stepsToday.count} steps
+          {stepsData[stepsData.length - 1].steps} steps
         </SvgText>
       </Svg>
     </View>

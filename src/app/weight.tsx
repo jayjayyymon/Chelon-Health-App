@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { InfoRow } from '@/components/info-row';
 import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
@@ -8,16 +8,18 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TextInput } from 'react-native';
 import { Spacing } from '@/constants/theme';
-import { userProfile, weightHistory } from '@/data/mock-data';
+import { userProfile } from '@/data/mock-data';
+import { useHealthData } from '@/context/HealthDataContext';
 
 export default function WeightScreen() {
-  const [weightHistoryLocal, setWeightHistoryLocal] = useState(weightHistory);
-  const [currentWeight, setCurrentWeight] = useState(weightHistoryLocal[weightHistoryLocal.length - 1].kg);
+  const { weightHistory, addWeight } = useHealthData();
   const [inputWeight, setInputWeight] = useState('');
   const [weightChangeStatus, setWeightChangeStatus] = useState<string | null>(null); // 'increased', 'decreased', or null
   const [error, setError] = useState<string | null>(null);
 
-  const latest = weightHistoryLocal[weightHistoryLocal.length - 1];
+  // Compute latest weight and current weight from context's weightHistory
+  const latest = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : { id: '', date: '', kg: 0 };
+  const currentWeight = latest.kg;
 
   const handleWeightChange = (text: string) => {
     // Allow digits, decimal point, and minus sign
@@ -79,18 +81,13 @@ export default function WeightScreen() {
       setWeightChangeStatus(null);
     }
 
-    // Add new weight entry to history
+    // Add new weight entry to history via context
     const newEntry = {
       id: `wt${Date.now()}`,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       kg: weightValue,
     };
-
-    // Update weight history in local state
-    setWeightHistoryLocal([...weightHistoryLocal, newEntry]);
-
-    // Update current weight
-    setCurrentWeight(weightValue);
+    addWeight(newEntry);
 
     // Clear input
     setInputWeight('');
@@ -152,7 +149,7 @@ export default function WeightScreen() {
       </SectionCard>
 
       <SectionCard title="History">
-        {weightHistoryLocal.map((entry) => (
+        {weightHistory.map((entry) => (
           <InfoRow key={entry.id} label={entry.date} value={`${entry.kg} kg`} />
         ))}
       </SectionCard>

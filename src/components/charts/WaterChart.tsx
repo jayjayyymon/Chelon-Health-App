@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Svg, Rect as SvgRect, Text as SvgText } from 'react-native-svg';
-import { waterSummary } from '@/data/mock-data';
+import { useHealthData } from '@/context/HealthDataContext';
+import { userProfile } from '@/data/mock-data';
 
 type WaterChartProps = {
   width?: number;
@@ -14,7 +15,9 @@ export const WaterChart: React.FC<WaterChartProps> = ({
   height = 100,
   showLabel = true
 }) => {
-  const glasses = waterSummary.glasses;
+  const { waterGlasses } = useHealthData();
+  const glasses = waterGlasses;
+
   if (glasses.length === 0) {
     return (
       <View style={[styles.container, { width, height }]}>
@@ -22,6 +25,10 @@ export const WaterChart: React.FC<WaterChartProps> = ({
       </View>
     );
   }
+
+  const totalMl = glasses.reduce((sum, glass) => sum + glass.amountMl, 0);
+  const todayL = totalMl / 1000;
+  const goalL = userProfile.dailyWaterGoalL; // from user profile
 
   const padding = 20;
   const chartWidth = width - padding * 2;
@@ -74,7 +81,7 @@ export const WaterChart: React.FC<WaterChartProps> = ({
           fill="#333"
           fontSize={12}
         >
-          {waterSummary.todayL}L / {waterSummary.goalL}L
+          {todayL.toFixed(1)}L / {goalL}L
         </SvgText>
       </Svg>
     </View>
