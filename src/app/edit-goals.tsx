@@ -1,5 +1,5 @@
 import { View, TextInput, Alert } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 
 import { ScreenContainer } from '@/components/screen-container';
@@ -20,11 +20,22 @@ export default function EditGoalsScreen() {
   const [goalWeightInput, setGoalWeightInput] = useState('');
   const [dailyWaterGoalInput, setDailyWaterGoalInput] = useState('');
   const [dailyStepGoalInput, setDailyStepGoalInput] = useState('');
+  const [sleepGoalHoursInput, setSleepGoalHoursInput] = useState('');
+  const [sleepGoalMinutesInput, setSleepGoalMinutesInput] = useState('');
+
+  useEffect(() => {
+    if (!loading) {
+      const totalMinutes = Math.round(profile.dailySleepGoalHours * 60);
+      setSleepGoalHoursInput(String(Math.floor(totalMinutes / 60)));
+      setSleepGoalMinutesInput(String(totalMinutes % 60));
+    }
+  }, [loading, profile.dailySleepGoalHours]);
 
   // Validation state
   const [goalWeightError, setGoalWeightError] = useState<string | null>(null);
   const [dailyWaterGoalError, setDailyWaterGoalError] = useState<string | null>(null);
   const [dailyStepGoalError, setDailyStepGoalError] = useState<string | null>(null);
+  const [sleepGoalError, setSleepGoalError] = useState<string | null>(null);
 
   // Handle goal weight change
   const handleGoalWeightChange = (text: string) => {
@@ -87,6 +98,25 @@ export default function EditGoalsScreen() {
       setDailyStepGoalError(null);
     }
 
+    const trimmedSleepHours = sleepGoalHoursInput.trim();
+    const trimmedSleepMinutes = sleepGoalMinutesInput.trim();
+    const sleepHours = Number(trimmedSleepHours);
+    const sleepMinutes = Number(trimmedSleepMinutes);
+    const sleepTotalMinutes = sleepHours * 60 + sleepMinutes;
+    if (
+      !/^\d+$/.test(trimmedSleepHours)
+      || !/^\d+$/.test(trimmedSleepMinutes)
+      || !Number.isFinite(sleepTotalMinutes)
+      || sleepMinutes > 59
+      || sleepTotalMinutes <= 0
+      || sleepTotalMinutes > 24 * 60
+    ) {
+      setSleepGoalError('Enter a sleep goal greater than 0 and no more than 24 hours. Minutes must be 0–59.');
+      isValid = false;
+    } else {
+      setSleepGoalError(null);
+    }
+
     return isValid;
   };
 
@@ -102,6 +132,7 @@ export default function EditGoalsScreen() {
       const goalWeightToSave = goalWeightInput.trim() === '' ? profile.goalWeightKg : Number(goalWeightInput.trim());
       const dailyWaterGoalToSave = dailyWaterGoalInput.trim() === '' ? profile.dailyWaterGoalL : Number(dailyWaterGoalInput.trim());
       const dailyStepGoalToSave = dailyStepGoalInput.trim() === '' ? profile.dailyStepGoal : Number(dailyStepGoalInput.trim());
+      const dailySleepGoalToSave = (Number(sleepGoalHoursInput) * 60 + Number(sleepGoalMinutesInput)) / 60;
 
       // Build the profile object to save (only update goals)
       const fullProfileToSave = {
@@ -109,6 +140,7 @@ export default function EditGoalsScreen() {
         goalWeightKg: goalWeightToSave,
         dailyWaterGoalL: dailyWaterGoalToSave,
         dailyStepGoal: dailyStepGoalToSave,
+        dailySleepGoalHours: dailySleepGoalToSave,
       };
 
       // Save to persistent storage
@@ -137,11 +169,15 @@ export default function EditGoalsScreen() {
     setGoalWeightInput('');
     setDailyWaterGoalInput('');
     setDailyStepGoalInput('');
+    const totalMinutes = Math.round(profile.dailySleepGoalHours * 60);
+    setSleepGoalHoursInput(String(Math.floor(totalMinutes / 60)));
+    setSleepGoalMinutesInput(String(totalMinutes % 60));
 
     // Clear errors
     setGoalWeightError(null);
     setDailyWaterGoalError(null);
     setDailyStepGoalError(null);
+    setSleepGoalError(null);
 
     router.back();
   };
@@ -211,6 +247,37 @@ export default function EditGoalsScreen() {
           {dailyStepGoalError && (
             <ThemedText type="small" style={{color: '#d32f2f', marginHorizontal: Spacing.three, marginBottom: Spacing.two}}>
               {dailyStepGoalError}
+            </ThemedText>
+          )}
+
+          <ThemedText type="smallBold">Daily Sleep Goal</ThemedText>
+          <ThemedView style={{ flexDirection: 'row', gap: Spacing.two, marginVertical: Spacing.two }}>
+            <ThemedView type="backgroundSelected" style={{ flex: 1, padding: Spacing.one }}>
+              <TextInput
+                accessibilityLabel="Sleep goal hours"
+                value={sleepGoalHoursInput}
+                onChangeText={text => { setSleepGoalHoursInput(text); setSleepGoalError(null); }}
+                style={{ fontSize: 16, color: theme.text }}
+                keyboardType="number-pad"
+                placeholder="Hours"
+                placeholderTextColor={theme.textSecondary}
+              />
+            </ThemedView>
+            <ThemedView type="backgroundSelected" style={{ flex: 1, padding: Spacing.one }}>
+              <TextInput
+                accessibilityLabel="Sleep goal minutes"
+                value={sleepGoalMinutesInput}
+                onChangeText={text => { setSleepGoalMinutesInput(text); setSleepGoalError(null); }}
+                style={{ fontSize: 16, color: theme.text }}
+                keyboardType="number-pad"
+                placeholder="Minutes"
+                placeholderTextColor={theme.textSecondary}
+              />
+            </ThemedView>
+          </ThemedView>
+          {sleepGoalError && (
+            <ThemedText type="small" style={{color: '#d32f2f', marginHorizontal: Spacing.three, marginBottom: Spacing.two}}>
+              {sleepGoalError}
             </ThemedText>
           )}
         </ThemedView>

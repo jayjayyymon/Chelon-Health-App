@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 import { weightHistory, waterSummary, sleepLastNight, stepsToday, dietMeals } from '@/data/mock-data';
+import { loadWeightHistory, saveWeightHistory } from '@/utils/weightStorage';
 
 export type WeightEntry = {
   id: string;
@@ -65,7 +66,28 @@ export const useHealthData = () => {
 
 export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
   const [weightHistoryState, setWeightHistoryState] = useState<WeightEntry[]>(weightHistory);
+  const [weightHistoryHydrated, setWeightHistoryHydrated] = useState(false);
   const [waterGlassesState, setWaterGlassesState] = useState<WaterGlass[]>(waterSummary.glasses);
+
+  useEffect(() => {
+    let active = true;
+
+    loadWeightHistory().then(storedHistory => {
+      if (!active) return;
+      if (storedHistory !== null) setWeightHistoryState(storedHistory);
+      setWeightHistoryHydrated(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (weightHistoryHydrated) {
+      void saveWeightHistory(weightHistoryState);
+    }
+  }, [weightHistoryHydrated, weightHistoryState]);
   const [dietMealsState, setDietMealsState] = useState<DietMeal[]>(dietMeals);
 
   const generateMockSleepData = (): SleepEntry[] => {

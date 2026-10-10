@@ -95,7 +95,6 @@ export default function WaterScreen() {
             </View>
 
             <View style={styles.dropStage}>
-              <View style={styles.dropGlow} />
               <WaterIcon size={166} />
             </View>
 
@@ -273,19 +272,15 @@ const styles = StyleSheet.create({
     height: 137,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    transform: [{ translateY: 22 }],
     zIndex: 2,
     marginTop: Spacing.one,
   },
-  dropGlow: {
-    position: 'absolute',
-    height: 116,
-    width: 116,
-    borderRadius: 58,
-    backgroundColor: 'rgba(255,255,255,0.24)',
-    transform: [{ scaleX: 1.18 }],
-  },
   progressCard: {
     borderRadius: 25,
+    position: 'relative',
+    zIndex: 1,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.three,
@@ -389,7 +384,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     opacity: 0.9,
-    marginTop: -Spacing.two,
+    marginTop: Spacing.one,
   },
   recentCard: {
     marginTop: Spacing.three,

@@ -27,16 +27,16 @@ export const Colors = {
 export const DashboardColors = {
   light: {
     calorie: '#FF8422',
-    sleep: '#7EDDAA',
-    steps: '#9580F5',
+    sleep: '#9580F5',
+    steps: '#7EDDAA',
     water: '#35A1EE',
     weight: '#4DB9BC',
     wellness: '#E879A4',
   },
   dark: {
     calorie: '#C85B12',
-    sleep: '#278B58',
-    steps: '#6650C9',
+    sleep: '#6650C9',
+    steps: '#278B58',
     water: '#1475B8',
     weight: '#23878B',
     wellness: '#B74472',
