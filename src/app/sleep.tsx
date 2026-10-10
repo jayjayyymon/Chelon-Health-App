@@ -34,6 +34,8 @@ export default function SleepScreen() {
     setShowBedtimePicker(false);
     if (selectedDate) {
       setBedtime(selectedDate);
+      // Recalculate duration when bedtime changes
+      calculateSleepDuration();
     }
   };
 
@@ -49,10 +51,12 @@ export default function SleepScreen() {
     setShowWakeTimePicker(false);
     if (selectedDate) {
       setWakeTime(selectedDate);
+      // Recalculate duration when wake time changes
+      calculateSleepDuration();
     }
   };
 
-  // Calculate sleep duration
+  // Calculate sleep duration and set sleepDuration state
   const calculateSleepDuration = () => {
     try {
       if (!bedtime || !wakeTime) {
@@ -84,21 +88,6 @@ export default function SleepScreen() {
         : `${hours}h`;
 
       setSleepDuration(durationString);
-
-      const formattedBedtime = formatTimeForDisplay(bedtime);
-      const formattedWakeTime = formatTimeForDisplay(wakeTime);
-
-      // Save to context as a sleep entry
-      const sleepEntry = {
-        id: `sleep-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        hours: parseFloat((hours + minutes / 60).toFixed(1)), // Convert to hours as a float
-      };
-      addSleep(sleepEntry);
-
-      // Clear input times after saving
-      setBedtime(null);
-      setWakeTime(null);
     } catch (error) {
       setSleepDuration(null);
     }
@@ -130,7 +119,31 @@ export default function SleepScreen() {
       return;
     }
 
-    // Data is already saved in calculateSleepDuration when both times are entered
+    // Create sleep entry to save to context
+    const sleepHours = parseFloat(
+      (
+        Math.floor(
+          ((wakeTime.getTime() - bedtime.getTime()) / (1000 * 60))
+        ) / 60
+      ).toFixed(1)
+    );
+
+    const sleepEntry = {
+      id: `sleep-${Date.now()}`,
+      date: bedtime.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      hours: sleepHours,
+    };
+
+    addSleep(sleepEntry);
+
+    // Clear inputs after saving
+    setBedtime(null);
+    setWakeTime(null);
+    setSleepDuration(null);
+
     alert('Sleep data saved!');
   };
 
