@@ -64,21 +64,23 @@ export default function SleepScreen() {
         return;
       }
 
-      // Calculate duration in minutes
-      let bedtimeInMinutes = bedtime.getHours() * 60 + bedtime.getMinutes();
-      let wakeTimeInMinutes = wakeTime.getHours() * 60 + wakeTime.getMinutes();
+      // Calculate duration in milliseconds
+      let durationInMs = wakeTime.getTime() - bedtime.getTime();
 
-      // Calculate duration (handle crossing midnight)
-      let durationInMinutes;
-      if (wakeTimeInMinutes <= bedtimeInMinutes) {
-        // Wake time is next day
-        durationInMinutes = (24 * 60 - bedtimeInMinutes) + wakeTimeInMinutes;
-      } else {
-        // Wake time is same day
-        durationInMinutes = wakeTimeInMinutes - bedtimeInMinutes;
+      // If wake time is earlier than bedtime, it means it crossed midnight
+      // Add 24 hours to get the correct positive duration
+      if (durationInMs < 0) {
+        durationInMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+      }
+
+      // Handle zero or negative duration (invalid sleep period)
+      if (durationInMs <= 0) {
+        setSleepDuration(null);
+        return;
       }
 
       // Convert to hours and minutes
+      const durationInMinutes = Math.floor(durationInMs / (1000 * 60));
       const hours = Math.floor(durationInMinutes / 60);
       const minutes = durationInMinutes % 60;
 
@@ -119,14 +121,23 @@ export default function SleepScreen() {
       return;
     }
 
+    // Calculate duration in milliseconds
+    let durationInMs = wakeTime.getTime() - bedtime.getTime();
+
+    // If wake time is earlier than bedtime, it means it crossed midnight
+    // Add 24 hours to get the correct positive duration
+    if (durationInMs < 0) {
+      durationInMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+    }
+
+    // Handle zero or negative duration (invalid sleep period)
+    if (durationInMs <= 0) {
+      alert('Please enter valid times');
+      return;
+    }
+
     // Create sleep entry to save to context
-    const sleepHours = parseFloat(
-      (
-        Math.floor(
-          ((wakeTime.getTime() - bedtime.getTime()) / (1000 * 60))
-        ) / 60
-      ).toFixed(1)
-    );
+    const sleepHours = parseFloat((durationInMs / 3600000).toFixed(1));
 
     const sleepEntry = {
       id: `sleep-${Date.now()}`,
