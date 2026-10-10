@@ -92,12 +92,9 @@ export default function EditProfileScreen() {
 
     // Validate height: if not empty, must be valid height between 100-250 cm
     const heightValue = parseInt(heightInput, 10);
-    const isHeightNumeric = !isNaN(heightValue) && heightInput.trim() !== '';
-    if (isHeightNumeric) {
-      if (heightValue <= 0) {
-        setHeightError('Please enter a valid height between 100-250 cm');
-        isValid = false;
-      } else if (heightValue < 100 || heightValue > 250) {
+    const isHeightValid = !isNaN(heightValue) && heightInput.trim() !== '' && heightValue > 0;
+    if (isHeightValid) {
+      if (heightValue < 100 || heightValue > 250) {
         setHeightError('Height must be between 100-250 cm');
         isValid = false;
       } else {
@@ -135,10 +132,7 @@ export default function EditProfileScreen() {
       const profileToSave = {
         name: nameToSave,
         age: profile?.age ?? 28,
-        heightCm: heightToSave,
-        goalWeightKg: profile?.goalWeightKg ?? 68,
-        dailyWaterGoalL: profile?.dailyWaterGoalL ?? 2.5,
-        dailyStepGoal: profile?.dailyStepGoal ?? 8000
+        heightCm: heightToSave
       };
 
       // Update profile in state
@@ -180,11 +174,17 @@ export default function EditProfileScreen() {
     setNameInput('');
     setWeightInput('');
     setHeightInput('');
+    setGoalWeightInput('');
+    setDailyWaterGoalInput('');
+    setDailyStepGoalInput('');
 
     // Clear errors
     setNameError(null);
     setWeightError(null);
     setHeightError(null);
+    setGoalWeightError(null);
+    setDailyWaterGoalError(null);
+    setDailyStepGoalError(null);
 
     // Navigate back - in a real app we'd use navigation, but for now we'll just reset
     // Note: Actual navigation would be handled by the calling screen

@@ -8,11 +8,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TextInput } from 'react-native';
 import { Spacing } from '@/constants/theme';
-import { userProfile } from '@/data/mock-data';
+import { useProfile } from '@/hooks/useProfile';
 import { useHealthData } from '@/context/HealthDataContext';
 
 export default function WeightScreen() {
   const { weightHistory, addWeight } = useHealthData();
+  const { profile } = useProfile();
   const [inputWeight, setInputWeight] = useState('');
   const [weightChangeStatus, setWeightChangeStatus] = useState<string | null>(null); // 'increased', 'decreased', or null
   const [error, setError] = useState<string | null>(null);
@@ -94,10 +95,10 @@ export default function WeightScreen() {
   };
 
   return (
-    <ScreenContainer subtitle={`Latest weight is ${currentWeight} kg. Goal is ${userProfile.goalWeightKg} kg.`}>
+    <ScreenContainer subtitle={`Latest weight is ${currentWeight} kg. Goal is ${profile?.goalWeightKg ?? 68} kg.`}>
       <SectionCard title="Current">
         <InfoRow label="Latest" value={`${currentWeight} kg`} />
-        <InfoRow label="Goal" value={`${userProfile.goalWeightKg} kg`} />
+        <InfoRow label="Goal" value={`${(profile?.goalWeightKg ?? 68)} kg`} />
         {weightChangeStatus && (
           <InfoRow
             label="Change"

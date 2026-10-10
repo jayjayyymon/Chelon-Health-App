@@ -6,15 +6,16 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
-import { userProfile } from '@/data/mock-data';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function WaterScreen() {
   const { waterGlasses, setWaterGlasses } = useHealthData();
+  const { profile } = useProfile();
 
   const glassAmountMl = 250;
   const totalMl = waterGlasses.length * glassAmountMl;
   const todayL = totalMl / 1000;
-  const goalL = userProfile.dailyWaterGoalL;
+  const goalL = profile?.dailyWaterGoalL ?? 2.5;
 
   const addGlass = () => {
     if (todayL < goalL) {

@@ -2,13 +2,14 @@ import { InfoRow } from '@/components/info-row';
 import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
-import { userProfile } from '@/data/mock-data';
+import { useProfile } from '@/hooks/useProfile';
 import { useHealthData } from '@/context/HealthDataContext';
 
 export default function StepsScreen() {
   const { stepsHistory, setStepsHistory } = useHealthData();
+  const { profile } = useProfile();
   const todaySteps = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1].steps : 0;
-  const GOAL = userProfile.dailyStepGoal;
+  const GOAL = profile?.dailyStepGoal ?? 8000;
 
   const addSteps = () => {
     const newSteps = Math.max(0, todaySteps + 500);

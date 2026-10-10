@@ -8,7 +8,7 @@ import { Spacing } from '@/constants/theme';
 import { TextInput } from 'react-native';
 import { useState } from 'react';
 import { useHealthData } from '@/context/HealthDataContext';
-import { userProfile } from '@/data/mock-data';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function ChatbotScreen() {
   const [messages, setMessages] = useState<Array<{id: string; from: 'user' | 'bot'; text: string}>>([]);
@@ -22,6 +22,7 @@ export default function ChatbotScreen() {
     stepsHistory,
     dietMeals
   } = useHealthData();
+  const { profile } = useProfile();
 
   // Helper function to calculate today's water intake in liters
   const getTodayWaterIntakeL = (): number => {
@@ -66,7 +67,7 @@ export default function ChatbotScreen() {
     // Water intake
     if (lowerInput.includes('water') || lowerInput.includes('drink') || lowerInput.includes('hydration')) {
       const todayL = getTodayWaterIntakeL();
-      const goalL = userProfile.dailyWaterGoalL;
+      const goalL = profile?.dailyWaterGoalL ?? 2.5;
       return `You've logged ${todayL.toFixed(1)} L of water today out of your ${goalL} L goal. Keep drinking!`;
     }
 
@@ -75,7 +76,7 @@ export default function ChatbotScreen() {
       const latest = getLatestWeight();
       if (latest) {
         const currentWeight = latest.kg;
-        const goalWeight = userProfile.goalWeightKg;
+        const goalWeight = profile?.goalWeightKg ?? 68;
         const weightDiff = currentWeight - goalWeight;
         if (weightDiff > 0) {
           return `Your current weight is ${currentWeight} kg, which is ${weightDiff.toFixed(1)} kg above your goal of ${goalWeight} kg.`;
@@ -105,7 +106,7 @@ export default function ChatbotScreen() {
       const latest = getLatestSteps();
       if (latest) {
         const todaySteps = latest.steps;
-        const goalSteps = userProfile.dailyStepGoal;
+        const goalSteps = profile?.dailyStepGoal ?? 8000;
         return `You've taken ${todaySteps.toLocaleString()} steps today toward your goal of ${goalSteps.toLocaleString()} steps. Remember, this is simulated/manual data since device sensors aren't connected.`;
       } else {
         return 'No step data recorded yet. Try adding some steps to see your progress!';
@@ -141,7 +142,7 @@ export default function ChatbotScreen() {
 
     // Profile/Goals
     if (lowerInput.includes('goal') || lowerInput.includes('target') || lowerInput.includes('profile')) {
-      return `Your health goals are: Weight ${userProfile.goalWeightKg} kg, Water ${userProfile.dailyWaterGoalL} L/day, Steps ${userProfile.dailyStepGoal.toLocaleString()}/day.`;
+      return `Your health goals are: Weight ${profile?.goalWeightKg ?? 68} kg, Water ${profile?.dailyWaterGoalL ?? 2.5} L/day, Steps ${(profile?.dailyStepGoal ?? 8000).toLocaleString()}/day.`;
     }
 
     // Help

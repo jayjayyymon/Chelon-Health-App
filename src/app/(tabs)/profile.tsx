@@ -133,6 +133,7 @@ export default function ProfileScreen() {
       </SectionCard>
 
       <PlaceholderButton label="Edit profile" onPress={() => router.push('/edit-profile')} />
+      <PlaceholderButton label="Edit goals" onPress={() => router.push('/edit-goals')} />
     </ScreenContainer>
   );
 }

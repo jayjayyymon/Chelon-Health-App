@@ -3,15 +3,17 @@ import { StyleSheet, View } from 'react-native';
 import { NavCard } from '@/components/nav-card';
 import { ScreenContainer } from '@/components/screen-container';
 import { ThemedText } from '@/components/themed-text';
-import { careShortcuts, trackerShortcuts, userProfile } from '@/data/mock-data';
+import { careShortcuts, trackerShortcuts } from '@/data/mock-data';
 import { WeightChart } from '@/components/charts/WeightChart';
 import { WaterChart } from '@/components/charts/WaterChart';
 import { SleepChart } from '@/components/charts/SleepChart';
 import { StepsChart } from '@/components/charts/StepsChart';
 import { useHealthData } from '@/context/HealthDataContext';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function DashboardScreen() {
   const { weightHistory, waterGlasses, sleepHistory, stepsHistory, dietMeals } = useHealthData();
+  const { profile } = useProfile();
 
   // Compute latest weight
   const latestWeightEntry = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
@@ -20,7 +22,7 @@ export default function DashboardScreen() {
   // Compute water intake
   const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const totalL = totalMl / 1000;
-  const goalL = userProfile.dailyWaterGoalL;
+  const goalL = profile?.dailyWaterGoalL ?? 2.5;
 
   // Compute latest sleep
   const latestSleepEntry = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
@@ -49,7 +51,7 @@ export default function DashboardScreen() {
         break;
       case '/steps':
         newItem.value = latestSteps.toLocaleString();
-        newItem.detail = `Goal ${userProfile.dailyStepGoal} steps`;
+        newItem.detail = `Goal ${profile?.dailyStepGoal ?? 8000} steps`;
         break;
       case '/diet':
         const totalCalories = dietMeals.reduce((sum, meal) => sum + meal.calories, 0);
@@ -64,7 +66,7 @@ export default function DashboardScreen() {
   });
 
   // Subtitle: greeting and note that data is current
-  const subtitle = `Welcome back, ${userProfile.name}. Your health data is up to date.`;
+  const subtitle = `Welcome back, ${profile?.name ?? 'User'}. Your health data is up to date.`;
 
   return (
     <ScreenContainer
