@@ -1,5 +1,6 @@
 import { StyleSheet, View, Pressable } from 'react-native';
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 
 import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
@@ -9,9 +10,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
 export default function WellnessScreen() {
-  const [step, setStep] = useState<'form' | 'result'>('form');
+  const router = useRouter();
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [isValid, setIsValid] = useState(false);
+  const [step, setStep] = useState<'form' | 'result'>('form');
 
   // Define the questionnaire
   const questions = [
@@ -61,105 +63,131 @@ export default function WellnessScreen() {
     },
   ];
 
-  // Handle answer change
-  const handleAnswerChange = (questionId: string, value: number) => {
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentQuestionIndex];
+
+  // Handle answer change for the current question
+  const handleAnswerChange = (value: number) => {
     setAnswers(prev => ({
       ...prev,
-      [questionId]: value,
+      [currentQuestion.id]: value,
     }));
   };
 
-  // Validate that all questions are answered
-  const validateForm = () => {
-    const allAnswered = questions.every(q => answers[q.id] !== undefined);
-    setIsValid(allAnswered);
-  };
+  // Check if current question is answered
+  const isCurrentQuestionAnswered = answers[currentQuestion.id] !== undefined;
 
-  // Calculate average score
-  const calculateScore = () => {
-    const total = questions.reduce((sum, q) => sum + (answers[q.id] || 0), 0);
-    return Math.round((total / questions.length) * 10) / 10; // one decimal
-  };
-
-  // Get suggestion based on score
-  const getSuggestion = (score: number) => {
-    if (score >= 4) {
-      return 'You\'re doing great! Keep up the healthy habits that are working for you.';
-    } else if (score >= 3) {
-      return 'You\'re doing okay. Consider small improvements like taking short breaks, staying hydrated, or getting some fresh air.';
+  // Handle going to next question or submitting
+  const handleNextOrSubmit = () => {
+    if (!isCurrentQuestionAnswered) return;
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      return 'You might be having a tough time. Be kind to yourself, reach out to someone you trust, and consider activities that usually help you feel better.';
+      // All questions answered, go to result step
+      setStep('result');
     }
   };
 
-  // Handle submit
-  const handleSubmit = () => {
-    setStep('result');
+  // Handle going back to previous question
+  const handleBack = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+    }
   };
 
-  // Handle retake
+  // Handle retake (reset everything)
   const handleRetake = () => {
-    setStep('form');
+    setCurrentQuestionIndex(0);
     setAnswers({});
-    setIsValid(false);
+    setStep('form');
   };
 
   if (step === 'form') {
     return (
       <ScreenContainer subtitle="Reflect on your well-being with this quick check-in.">
         <SectionCard title="Wellness Check-In">
-          {questions.map((question) => (
-            <View key={question.id} style={styles.questionContainer}>
-              <ThemedText type="smallBold">{question.title}</ThemedText>
-              <View style={styles.optionsRow}>
-                {question.options.map((option) => (
-                  <Pressable key={option.value} onPress={() => {
-                    handleAnswerChange(question.id, option.value);
-                    validateForm();
-                  }}>
-                    <ThemedView
-                      type={answers[question.id] === option.value ? 'backgroundSelected' : 'background'}
-                      style={styles.optionChip}
-                    >
-                      <ThemedText type="small">{option.label}</ThemedText>
-                    </ThemedView>
-                  </Pressable>
-                ))}
-              </View>
+          {/* Progress indicator */}
+          <ThemedText themeColor="textSecondary" style={styles.progressText}>
+            Question {currentQuestionIndex + 1} of {totalQuestions}
+          </ThemedText>
+
+          {/* Current question */}
+          <View key={currentQuestion.id} style={styles.questionContainer}>
+            <ThemedText type="smallBold">{currentQuestion.title}</ThemedText>
+            <View style={styles.optionsRow}>
+              {currentQuestion.options.map((option) => (
+                <Pressable
+                  key={option.value}
+                  onPress={() => handleAnswerChange(option.value)}
+                >
+                  <ThemedView
+                    type={answers[currentQuestion.id] === option.value ? 'backgroundSelected' : 'background'}
+                    style={styles.optionChip}
+                  >
+                    <ThemedText type="small">{option.label}</ThemedText>
+                  </ThemedView>
+                </Pressable>
+              ))}
             </View>
-          ))}
+          </View>
         </SectionCard>
 
-        <PlaceholderButton
-          label="Submit Check-In"
-          onPress={isValid ? handleSubmit : undefined}
-        />
-        {!isValid && answers && Object.keys(answers).length > 0 && (
+        {/* Navigation buttons */}
+        <View style={styles.buttonContainer}>
+          {currentQuestionIndex > 0 && (
+            <PlaceholderButton label="Back" onPress={handleBack} />
+          )}
+          {currentQuestionIndex < totalQuestions - 1 ? (
+            <PlaceholderButton
+              label="Next"
+              onPress={isCurrentQuestionAnswered ? handleNextOrSubmit : undefined}
+            />
+          ) : (
+            <PlaceholderButton
+              label="Submit"
+              onPress={isCurrentQuestionAnswered ? handleNextOrSubmit : undefined}
+            />
+          )}
+        </View>
+
+        {/* Validation message */}
+        {!isCurrentQuestionAnswered && answers && Object.keys(answers).length > 0 && (
           <ThemedText themeColor="textSecondary" style={styles.errorText}>
-            Please answer all questions to submit.
+            Please answer the current question to continue.
           </ThemedText>
         )}
       </ScreenContainer>
     );
   }
 
-  // Result step
-  const score = calculateScore();
-  const suggestion = getSuggestion(score);
-
+  // Result step: show summary of answers
   return (
-    <ScreenContainer subtitle="Here's your wellness reflection.">
+    <ScreenContainer subtitle="Here's your wellness summary.">
       <SectionCard title="Your Wellness Check-In">
-        <ThemedText type="smallBold">Your Score: {score}/5</ThemedText>
-        <ThemedText>{suggestion}</ThemedText>
+        {questions.map((question) => (
+          <View key={question.id} style={styles.summaryItem}>
+            <ThemedText type="smallBold">{question.title}</ThemedText>
+            <ThemedText>
+              {answers[question.id] !== undefined
+                ? questions.find(q => q.id === question.id)?.options.find(o => o.value === answers[question.id])?.label
+                : 'Not answered'}
+            </ThemedText>
+          </View>
+        ))}
         <ThemedText themeColor="textSecondary" style={styles.disclaimer}>
           This check-in is for personal wellness reflection only. It is not a clinical assessment or substitute for professional care. If you are experiencing distress or thoughts of self-harm, please reach out to a trusted person or emergency services immediately.
         </ThemedText>
       </SectionCard>
 
       <View style={styles.buttonContainer}>
-        <PlaceholderButton label="Retake Check-In" onPress={handleRetake} />
-        <PlaceholderButton label="Done" onPress={handleRetake} />
+        <PlaceholderButton label="Retake" onPress={handleRetake} />
+        <PlaceholderButton
+          label="Done"
+          onPress={() => {
+            // Navigate to dashboard (tabs index)
+            router.replace('../(tabs)');
+          }}
+        />
       </View>
     </ScreenContainer>
   );
@@ -193,5 +221,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: Spacing.three,
+  },
+  progressText: {
+    marginTop: Spacing.one,
+    marginBottom: Spacing.one,
+    textAlign: 'center',
+  },
+  summaryItem: {
+    marginVertical: Spacing.one,
   },
 });
