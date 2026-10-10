@@ -20,6 +20,7 @@ export default function EditGoalsScreen() {
   const [goalWeightInput, setGoalWeightInput] = useState('');
   const [dailyWaterGoalInput, setDailyWaterGoalInput] = useState('');
   const [dailyStepGoalInput, setDailyStepGoalInput] = useState('');
+  const [dailyCalorieGoalInput, setDailyCalorieGoalInput] = useState('');
   const [sleepGoalHoursInput, setSleepGoalHoursInput] = useState('');
   const [sleepGoalMinutesInput, setSleepGoalMinutesInput] = useState('');
 
@@ -35,6 +36,7 @@ export default function EditGoalsScreen() {
   const [goalWeightError, setGoalWeightError] = useState<string | null>(null);
   const [dailyWaterGoalError, setDailyWaterGoalError] = useState<string | null>(null);
   const [dailyStepGoalError, setDailyStepGoalError] = useState<string | null>(null);
+  const [dailyCalorieGoalError, setDailyCalorieGoalError] = useState<string | null>(null);
   const [sleepGoalError, setSleepGoalError] = useState<string | null>(null);
 
   // Handle goal weight change
@@ -53,6 +55,11 @@ export default function EditGoalsScreen() {
   const handleDailyStepGoalChange = (text: string) => {
     setDailyStepGoalInput(text);
     setDailyStepGoalError(null); // Clear error on input
+  };
+
+  const handleDailyCalorieGoalChange = (text: string) => {
+    setDailyCalorieGoalInput(text);
+    setDailyCalorieGoalError(null);
   };
 
   // Validate form
@@ -98,6 +105,19 @@ export default function EditGoalsScreen() {
       setDailyStepGoalError(null);
     }
 
+    const trimmedCalorieGoal = dailyCalorieGoalInput.trim();
+    if (trimmedCalorieGoal === '') {
+      setDailyCalorieGoalError(null);
+    } else if (!/^\d+$/.test(trimmedCalorieGoal) || !Number.isFinite(Number(trimmedCalorieGoal))) {
+      setDailyCalorieGoalError('Enter a whole-number calorie goal');
+      isValid = false;
+    } else if (Number(trimmedCalorieGoal) <= 0 || Number(trimmedCalorieGoal) > 10000) {
+      setDailyCalorieGoalError('Calorie goal must be between 1 and 10,000 kcal');
+      isValid = false;
+    } else {
+      setDailyCalorieGoalError(null);
+    }
+
     const trimmedSleepHours = sleepGoalHoursInput.trim();
     const trimmedSleepMinutes = sleepGoalMinutesInput.trim();
     const sleepHours = Number(trimmedSleepHours);
@@ -132,6 +152,7 @@ export default function EditGoalsScreen() {
       const goalWeightToSave = goalWeightInput.trim() === '' ? profile.goalWeightKg : Number(goalWeightInput.trim());
       const dailyWaterGoalToSave = dailyWaterGoalInput.trim() === '' ? profile.dailyWaterGoalL : Number(dailyWaterGoalInput.trim());
       const dailyStepGoalToSave = dailyStepGoalInput.trim() === '' ? profile.dailyStepGoal : Number(dailyStepGoalInput.trim());
+      const dailyCalorieGoalToSave = dailyCalorieGoalInput.trim() === '' ? profile.dailyCalorieGoal : Number(dailyCalorieGoalInput.trim());
       const dailySleepGoalToSave = (Number(sleepGoalHoursInput) * 60 + Number(sleepGoalMinutesInput)) / 60;
 
       // Build the profile object to save (only update goals)
@@ -140,6 +161,7 @@ export default function EditGoalsScreen() {
         goalWeightKg: goalWeightToSave,
         dailyWaterGoalL: dailyWaterGoalToSave,
         dailyStepGoal: dailyStepGoalToSave,
+        dailyCalorieGoal: dailyCalorieGoalToSave,
         dailySleepGoalHours: dailySleepGoalToSave,
       };
 
@@ -169,6 +191,7 @@ export default function EditGoalsScreen() {
     setGoalWeightInput('');
     setDailyWaterGoalInput('');
     setDailyStepGoalInput('');
+    setDailyCalorieGoalInput('');
     const totalMinutes = Math.round(profile.dailySleepGoalHours * 60);
     setSleepGoalHoursInput(String(Math.floor(totalMinutes / 60)));
     setSleepGoalMinutesInput(String(totalMinutes % 60));
@@ -177,6 +200,7 @@ export default function EditGoalsScreen() {
     setGoalWeightError(null);
     setDailyWaterGoalError(null);
     setDailyStepGoalError(null);
+    setDailyCalorieGoalError(null);
     setSleepGoalError(null);
 
     router.back();
@@ -247,6 +271,24 @@ export default function EditGoalsScreen() {
           {dailyStepGoalError && (
             <ThemedText type="small" style={{color: '#d32f2f', marginHorizontal: Spacing.three, marginBottom: Spacing.two}}>
               {dailyStepGoalError}
+            </ThemedText>
+          )}
+
+          <ThemedText type="smallBold">Daily Calorie Goal (kcal)</ThemedText>
+          <ThemedView type="backgroundSelected" style={{padding: Spacing.one, marginVertical: Spacing.two}}>
+            <TextInput
+              accessibilityLabel="Daily calorie goal"
+              placeholder={`${profile.dailyCalorieGoal} kcal`}
+              value={dailyCalorieGoalInput}
+              onChangeText={handleDailyCalorieGoalChange}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="number-pad"
+            />
+          </ThemedView>
+          {dailyCalorieGoalError && (
+            <ThemedText type="small" style={{color: '#d32f2f', marginHorizontal: Spacing.three, marginBottom: Spacing.two}}>
+              {dailyCalorieGoalError}
             </ThemedText>
           )}
 

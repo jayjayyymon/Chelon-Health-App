@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/use-theme';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 type ChatMessage = {
   id: string;
@@ -53,13 +54,19 @@ export default function ChatbotScreen() {
   };
 
   // Helper function to calculate today's total calories from meals
+  const getTodayMeals = () => {
+    const todayKey = getLocalDateKey();
+    return dietMeals.filter(meal => (meal.dateKey ?? todayKey) === todayKey);
+  };
+
+  // Helper function to calculate today's total calories from meals
   const getTodayTotalCalories = (): number => {
-    return dietMeals.reduce((sum: number, meal: { calories: number }) => sum + meal.calories, 0);
+    return getTodayMeals().reduce((sum, meal) => sum + meal.calories, 0);
   };
 
   // Helper function to get today's meal count
   const getTodayMealCount = (): number => {
-    return dietMeals.length;
+    return getTodayMeals().length;
   };
 
   // Simple rule-based responses using live data

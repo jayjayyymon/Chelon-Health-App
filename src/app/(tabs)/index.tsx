@@ -16,6 +16,7 @@ import { useHealthData } from '@/context/HealthDataContext';
 import { trackerShortcuts } from '@/data/mock-data';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useProfile } from '@/hooks/useProfile';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 const trackerPresentation = {
   '/diet': { title: 'Diet', icon: DietIcon, color: 'calorie' },
@@ -37,7 +38,9 @@ export default function DashboardScreen() {
   const latestStepsEntry = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
   const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const totalL = totalMl / 1000;
-  const totalCalories = dietMeals.reduce((sum, meal) => sum + meal.calories, 0);
+  const todayKey = getLocalDateKey();
+  const todayMeals = dietMeals.filter(meal => (meal.dateKey ?? todayKey) === todayKey);
+  const totalCalories = todayMeals.reduce((sum, meal) => sum + meal.calories, 0);
 
   const dynamicTrackerShortcuts = trackerShortcuts.map((item) => {
     const presentation = trackerPresentation[item.href];
@@ -66,7 +69,7 @@ export default function DashboardScreen() {
         break;
       case '/diet':
         tracker.value = `${totalCalories.toLocaleString()} kcal`;
-        tracker.detail = `${dietMeals.length} meals logged`;
+        tracker.detail = `${todayMeals.length} meals logged`;
         break;
       case '/wellness':
         tracker.value = profile.wellnessStatus ?? 'Not completed';

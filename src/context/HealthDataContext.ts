@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 import { weightHistory, waterSummary, sleepLastNight, stepsToday, dietMeals } from '@/data/mock-data';
 import { loadWeightHistory, saveWeightHistory } from '@/utils/weightStorage';
+import { getLocalDateKey, loadDietMeals, saveDietMeals } from '@/utils/dietStorage';
 
 export type WeightEntry = {
   id: string;
@@ -33,6 +34,8 @@ export type DietMeal = {
   name: string;
   meal: string;
   calories: number;
+  dateKey?: string;
+  createdAt?: string;
 };
 
 export type HealthDataContextType = {
@@ -51,6 +54,7 @@ export type HealthDataContextType = {
   dietMeals: DietMeal[];
   setDietMeals: Dispatch<SetStateAction<DietMeal[]>>;
   addDietMeal: (meal: DietMeal) => void;
+  updateDietMeal: (id: string, updates: Partial<Omit<DietMeal, 'id'>>) => void;
   removeDietMeal: (id: string) => void;
 };
 
@@ -89,6 +93,27 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [weightHistoryHydrated, weightHistoryState]);
   const [dietMealsState, setDietMealsState] = useState<DietMeal[]>(dietMeals);
+  const [dietMealsHydrated, setDietMealsHydrated] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    loadDietMeals().then(storedMeals => {
+      if (!active) return;
+      if (storedMeals !== null) setDietMealsState(storedMeals);
+      setDietMealsHydrated(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (dietMealsHydrated) {
+      void saveDietMeals(dietMealsState);
+    }
+  }, [dietMealsHydrated, dietMealsState]);
 
   const generateMockSleepData = (): SleepEntry[] => {
     const baseDate = new Date(sleepLastNight.date);
@@ -173,7 +198,20 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addDietMeal = (meal: DietMeal) => {
-    setDietMealsState(prev => [...prev, meal]);
+    setDietMealsState(prev => [
+      ...prev,
+      {
+        ...meal,
+        dateKey: meal.dateKey ?? getLocalDateKey(),
+        createdAt: meal.createdAt ?? new Date().toISOString(),
+      },
+    ]);
+  };
+
+  const updateDietMeal = (id: string, updates: Partial<Omit<DietMeal, 'id'>>) => {
+    setDietMealsState(prev => prev.map(meal => (
+      meal.id === id ? { ...meal, ...updates, id: meal.id } : meal
+    )));
   };
 
   const removeDietMeal = (id: string) => {
@@ -199,6 +237,7 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
         dietMeals: dietMealsState,
         setDietMeals: setDietMealsState,
         addDietMeal: addDietMeal,
+        updateDietMeal: updateDietMeal,
         removeDietMeal: removeDietMeal,
       }
     },

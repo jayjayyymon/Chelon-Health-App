@@ -8,6 +8,7 @@ export type UserProfile = {
   dailyWaterGoalL: number;
   dailyStepGoal: number;
   dailySleepGoalHours: number;
+  dailyCalorieGoal: number;
   wellnessStatus?: string;
 };
 
@@ -24,6 +25,7 @@ export const getDefaultProfile = (): UserProfile => ({
   dailyWaterGoalL: 2.5,
   dailyStepGoal: 8000,
   dailySleepGoalHours: 8,
+  dailyCalorieGoal: 2000,
   wellnessStatus: 'Okay',
 });
 
@@ -60,6 +62,12 @@ export const loadProfile = async (): Promise<UserProfile> => {
             && parsed.dailySleepGoalHours <= 24
             ? parsed.dailySleepGoalHours
             : defaults.dailySleepGoalHours,
+          dailyCalorieGoal: typeof parsed.dailyCalorieGoal === 'number'
+            && Number.isInteger(parsed.dailyCalorieGoal)
+            && parsed.dailyCalorieGoal > 0
+            && parsed.dailyCalorieGoal <= 10000
+            ? parsed.dailyCalorieGoal
+            : defaults.dailyCalorieGoal,
           wellnessStatus: typeof parsed.wellnessStatus === 'string'
             ? parsed.wellnessStatus
             : defaults.wellnessStatus,
