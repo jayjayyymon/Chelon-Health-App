@@ -3,9 +3,10 @@ import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { PlaceholderButton } from '@/components/placeholder-button';
+import { Alert } from 'react-native';
 
 import { useHealthData } from '@/context/HealthDataContext';
-import { getAppointments } from '@/utils/appointmentStorage';
+import { getAppointments, removeAppointment } from '@/utils/appointmentStorage';
 import { loadProfile } from '@/utils/profileStorage';
 import type { UserProfile } from '@/utils/profileStorage';
 import { useRouter } from 'expo-router';
@@ -78,6 +79,36 @@ export default function ProfileScreen() {
 
   const isLoading = appointmentsLoading || profileLoading;
 
+  const handleCancelAppointment = async (id: string) => {
+    Alert.alert(
+      'Cancel appointment?',
+      'Are you sure you want to cancel this appointment? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeAppointment(id);
+              // Reload appointments from storage
+              await loadAppointments();
+            } catch (error) {
+              Alert.alert(
+                'Error cancelling appointment',
+                'Failed to cancel appointment. Please try again.'
+              );
+              console.error('Failed to cancel appointment:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ScreenContainer inTabs title="Profile" subtitle="Local mock user. No authentication is used.">
       <SectionCard title="Account">
@@ -126,6 +157,12 @@ export default function ProfileScreen() {
                 <ThemedText>{appt.date}</ThemedText>
                 <ThemedText themeColor="textSecondary">Time:</ThemedText>
                 <ThemedText>{appt.time}</ThemedText>
+                <ThemedText
+                  style={{ color: 'red', textAlign: 'right', marginTop: 4 }}
+                  onPress={() => handleCancelAppointment(appt.id)}
+                >
+                  Cancel appointment
+                </ThemedText>
               </View>
             ))}
           </View>
