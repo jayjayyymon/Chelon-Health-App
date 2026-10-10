@@ -132,7 +132,10 @@ export default function EditProfileScreen() {
       const profileToSave = {
         name: nameToSave,
         age: profile?.age ?? 28,
-        heightCm: heightToSave
+        heightCm: heightToSave,
+        goalWeightKg: profile?.goalWeightKg ?? 68,
+        dailyWaterGoalL: profile?.dailyWaterGoalL ?? 2.0,
+        dailyStepGoal: profile?.dailyStepGoal ?? 8000
       };
 
       // Update profile in state
@@ -174,17 +177,11 @@ export default function EditProfileScreen() {
     setNameInput('');
     setWeightInput('');
     setHeightInput('');
-    setGoalWeightInput('');
-    setDailyWaterGoalInput('');
-    setDailyStepGoalInput('');
 
     // Clear errors
     setNameError(null);
     setWeightError(null);
     setHeightError(null);
-    setGoalWeightError(null);
-    setDailyWaterGoalError(null);
-    setDailyStepGoalError(null);
 
     // Navigate back - in a real app we'd use navigation, but for now we'll just reset
     // Note: Actual navigation would be handled by the calling screen
@@ -204,22 +201,6 @@ export default function EditProfileScreen() {
 
   return (
     <ScreenContainer title="Edit Profile">
-      {/* Profile Picture */}
-      <ThemedView type="backgroundElement" style={{alignItems: 'center', paddingVertical: Spacing.three}}>
-        {/* Using a simple circle placeholder for now - in a real app this would be an image */}
-        <View style={{
-          width: 100,
-          height: 100,
-          borderRadius: 50,
-          backgroundColor: '#e0e0e0',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginBottom: Spacing.two
-        }}>
-          <ThemedText type="smallBold">{nameInput.trim() !== '' ? nameInput.trim() : (profile?.name ?? '')?.charAt(0) ?? 'A'}</ThemedText>
-        </View>
-        <ThemedText type="smallBold">{nameInput.trim() !== '' ? nameInput.trim() : (profile?.name ?? '')}</ThemedText>
-      </ThemedView>
 
       {/* Form Fields */}
       <SectionCard title="Personal Information">
