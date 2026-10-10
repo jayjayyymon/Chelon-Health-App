@@ -23,7 +23,7 @@ export default function RootLayout() {
         <HealthDataProvider>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="water" options={{ title: 'Water' }} />
+            <Stack.Screen name="water" options={{ headerShown: false }} />
             <Stack.Screen name="diet" options={{ title: 'Diet' }} />
             <Stack.Screen name="weight" options={{ title: 'Weight' }} />
             <Stack.Screen name="sleep" options={{ title: 'Sleep' }} />

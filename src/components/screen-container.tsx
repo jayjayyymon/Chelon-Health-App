@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { FloatingTabBarInset, MaxContentWidth, Spacing } from '@/constants/theme';
 
 type ScreenContainerProps = {
   title?: string;
@@ -19,7 +19,7 @@ export function ScreenContainer({ title, subtitle, children, inTabs = false }: S
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          inTabs && { paddingBottom: BottomTabInset + Spacing.four },
+          inTabs && { paddingBottom: FloatingTabBarInset + Spacing.four },
         ]}>
         <SafeAreaView edges={inTabs ? ['top', 'left', 'right'] : ['bottom', 'left', 'right']} style={styles.inner}>
           {title ? <ThemedText type="subtitle">{title}</ThemedText> : null}

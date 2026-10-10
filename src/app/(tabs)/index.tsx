@@ -11,7 +11,7 @@ import {
 } from '@/components/icons/tracker-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { DashboardColors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { DashboardColors, FloatingTabBarInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { trackerShortcuts } from '@/data/mock-data';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: Spacing.four,
+    paddingBottom: FloatingTabBarInset + Spacing.four,
   },
   safeArea: {
     width: '100%',
@@ -215,11 +215,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 3,
+    elevation: 4,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 5,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   greetingText: {
     flex: 1,

@@ -45,6 +45,15 @@ export const DashboardColors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+export const NavigationColors = {
+  background: '#4ca771',
+  activeRing: '#F5F1E8',
+  activeBadge: '#F5F1E8',
+  activeIcon: '#4ca771',
+  label: '#FFFFFF',
+  inactiveIcon: '#D3E0D7',
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
@@ -80,5 +89,5 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const FloatingTabBarInset = Platform.select({ ios: 132, android: 124, web: 112 }) ?? 112;
 export const MaxContentWidth = 800;
