@@ -5,23 +5,30 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Pressable, StyleSheet, View, Alert } from 'react-native';
-import { Link, useRouter } from 'expo-router';
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Spacing } from '@/constants/theme';
+import { doctors } from '@/data/mock-data';
 import { saveAppointment } from '@/utils/appointmentStorage';
+
+const formatTimeSlot = (slot: string) => {
+  const [hours, minutes] = slot.split(':').map(Number);
+  return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
 
 export default function BookingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>() || {};
   const router = useRouter();
 
-  // Mock doctor data - in a real app, this would come from a database or context
-  const doctors = [
-    { id: 'd1', name: 'Dr. Maya Chen', specialty: 'General practice', nextSlot: 'Tomorrow, 10:30 AM' },
-    { id: 'd2', name: 'Dr. Omar Hassan', specialty: 'Nutrition', nextSlot: 'Fri, 2:00 PM' },
-    { id: 'd3', name: 'Dr. Priya Nair', specialty: 'Sleep medicine', nextSlot: 'Mon, 9:15 AM' },
-  ];
+  const [date, setDate] = useState<Date | null>(null);
+  const [time, setTime] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const selectedDoctor = doctors.find(doc => doc.id === id);
 
   // Handle missing or invalid ID gracefully
   if (!id) {
@@ -37,50 +44,28 @@ export default function BookingScreen() {
     );
   }
 
-  const selectedDoctor = doctors.find(doc => doc.id === id) || {
-    id,
-    name: 'Doctor not found',
-    specialty: 'Not specified',
-    nextSlot: 'Not available'
-  };
-
-  const [date, setDate] = useState<Date | null>(null);
-  const [time, setTime] = useState<string | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [isDateSelected, setIsDateSelected] = useState(false);
-  const [isTimeSelected, setIsTimeSelected] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  if (!selectedDoctor) {
+    return (
+      <ScreenContainer inTabs title="Doctor not found">
+        <ThemedText>Please select a doctor from the list.</ThemedText>
+        <Link href="/(tabs)/doctors" asChild>
+          <Pressable style={styles.backButton}>
+            <PlaceholderButton label="Back to Doctors" />
+          </Pressable>
+        </Link>
+      </ScreenContainer>
+    );
+  }
 
   // Minimum date is today (prevent past dates)
   const minDate = new Date();
   minDate.setHours(0, 0, 0, 0);
-
-  // Generate time slots from 9:00 AM to 5:00 PM in 30-minute increments
-  const timeSlots = [];
-  for (let hour = 9; hour <= 17; hour++) {
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
-  }
 
   const handleDateChange = (_event: any, selectedDate: any) => {
     setShowDatePicker(false);
     if (selectedDate) {
       const selectedDateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
       setDate(selectedDateObj);
-      setIsDateSelected(true);
-    }
-  };
-
-  const handleTimeChange = (_event: any, selectedDate: any) => {
-    setShowTimePicker(false);
-    if (selectedDate) {
-      const selectedDateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
-      const hours = selectedDateObj.getHours();
-      const minutes = selectedDateObj.getMinutes();
-      const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      setTime(timeString);
-      setIsTimeSelected(true);
     }
   };
 
@@ -88,13 +73,14 @@ export default function BookingScreen() {
     setShowDatePicker(true);
   };
 
-  const handleShowTimePicker = () => {
-    setShowTimePicker(true);
-  };
-
   const handleBookAppointment = async () => {
-    if (!isDateSelected || !isTimeSelected) {
-      alert('Please select both date and time');
+    if (!date || date < minDate) {
+      Alert.alert('Select an appointment date', 'Choose today or a future date.');
+      return;
+    }
+
+    if (!time || !selectedDoctor.availableTimes.includes(time)) {
+      Alert.alert('Select an appointment time', 'Choose one of the available times.');
       return;
     }
 
@@ -106,12 +92,13 @@ export default function BookingScreen() {
         day: 'numeric',
       }) : '';
 
+      const timeLabel = formatTimeSlot(time);
       const appointmentData = {
         doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.name,
         specialty: selectedDoctor.specialty,
         date: dateString,
-        time: time || '',
+        time: timeLabel,
       };
 
       await saveAppointment(appointmentData);
@@ -121,7 +108,7 @@ export default function BookingScreen() {
         doctorName: selectedDoctor.name,
         specialty: selectedDoctor.specialty,
         date: dateString,
-        time: time || '',
+        time: timeLabel,
       }).toString();
 
       router.push(`/book/confirmation?${queryString}`);
@@ -151,26 +138,26 @@ export default function BookingScreen() {
 
       <SectionCard title="Appointment Date & Time">
         <View style={styles.dateTimeSection}>
-          <View style={styles.dateBox}>
-            <View style={styles.infoRow}>
-              <ThemedText themeColor="textSecondary">Date:</ThemedText>
-              <Pressable onPress={handleShowDatePicker}>
-                <ThemedText>{isDateSelected && date ? formatDateForDisplay(date) : 'Select Date'}</ThemedText>
-              </Pressable>
-            </View>
+          <View style={styles.infoRow}>
+            <ThemedText themeColor="textSecondary">Date:</ThemedText>
+            <Pressable onPress={handleShowDatePicker}>
+              <ThemedText>{date ? formatDateForDisplay(date) : 'Select Date'}</ThemedText>
+            </Pressable>
           </View>
-
-          <View style={styles.timeBox}>
-            <View style={styles.infoRow}>
-              <ThemedText themeColor="textSecondary">Time:</ThemedText>
-              <Pressable onPress={handleShowTimePicker}>
-                <ThemedText>{isTimeSelected && time ? time : 'Select Time'}</ThemedText>
+          <ThemedText type="smallBold" style={styles.timeLabel}>Available times</ThemedText>
+          <View style={styles.timeSlots}>
+            {selectedDoctor.availableTimes.map((slot) => (
+              <Pressable key={slot} onPress={() => setTime(slot)}>
+                <ThemedView
+                  type={time === slot ? 'backgroundSelected' : 'backgroundElement'}
+                  style={styles.timeSlot}
+                >
+                  <ThemedText type="small">{formatTimeSlot(slot)}</ThemedText>
+                </ThemedView>
               </Pressable>
-            </View>
+            ))}
           </View>
         </View>
-
-        {/* Removed the success message box */}
       </SectionCard>
 
       <View style={styles.buttonContainer}>
@@ -181,14 +168,14 @@ export default function BookingScreen() {
         </Link>
 
         <Pressable
-          style={[styles.bookButton, (!isDateSelected || !isTimeSelected || isSaving) ? styles.disabledButton : {}]}
+          style={[styles.bookButton, (!date || !time || isSaving) ? styles.disabledButton : {}]}
           onPress={handleBookAppointment}
+          disabled={!date || !time || isSaving}
         >
           <PlaceholderButton label="Book Appointment" />
         </Pressable>
       </View>
 
-      {/* DateTime Pickers - hidden but controlled by state */}
       {showDatePicker && (
         <DateTimePicker
           testID="datePicker"
@@ -197,15 +184,6 @@ export default function BookingScreen() {
           display="default"
           minimumDate={minDate}
           onValueChange={handleDateChange}
-        />
-      )}
-      {showTimePicker && (
-        <DateTimePicker
-          testID="timePicker"
-          value={time ? new Date(`2020-01-01T${time}`) : new Date()}
-          mode="time"
-          display="default"
-          onValueChange={handleTimeChange}
         />
       )}
     </ScreenContainer>
@@ -222,17 +200,19 @@ const styles = StyleSheet.create({
   dateTimeSection: {
     padding: Spacing.three,
   },
-  dateBox: {
-    flex: 1,
-    marginRight: Spacing.one,
+  timeLabel: {
+    marginTop: Spacing.three,
+    marginBottom: Spacing.two,
   },
-  timeBox: {
-    flex: 1,
-    marginLeft: Spacing.one,
+  timeSlots: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
-  pickerButton: {
-    marginTop: Spacing.one,
-    alignItems: 'flex-end',
+  timeSlot: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
   },
   buttonContainer: {
     marginTop: Spacing.three,

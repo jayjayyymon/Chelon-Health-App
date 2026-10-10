@@ -1,5 +1,4 @@
-import { Link } from 'expo-router';
-import { Pressable, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { useState, useRef, useEffect } from 'react';
@@ -166,7 +165,7 @@ export default function HealthCentersScreen() {
       {!latitude && !longitude && !error ? (
         <SectionCard title="No location selected">
           <ThemedText>
-            Tap "Get current location" below or enter coordinates manually to find nearby health centers.
+            Tap &quot;Get current location&quot; below or enter coordinates manually to find nearby health centers.
           </ThemedText>
         </SectionCard>
       ) : null}

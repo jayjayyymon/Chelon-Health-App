@@ -33,14 +33,13 @@ export const WeightChart: React.FC<WeightChartProps> = ({
   const weights = weightHistory.map(d => d.kg);
   const minWeight = Math.min(...weights);
   const maxWeight = Math.max(...weights);
-  const weightRange = maxWeight - minWeight;
   const adjustedMin = minWeight - 0.5; // Add some padding below min
   const adjustedMax = maxWeight + 0.5; // Add some padding above max
   const range = adjustedMax - adjustedMin;
 
   // Scale functions
   const scaleX = (index: number) =>
-    padding + (index / (weightHistory.length - 1)) * chartWidth;
+    padding + (index / Math.max(weightHistory.length - 1, 1)) * chartWidth;
 
   const scaleY = (weight: number) =>
     padding + chartHeight - ((weight - adjustedMin) / range) * chartHeight;

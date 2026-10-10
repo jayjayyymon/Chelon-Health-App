@@ -13,19 +13,25 @@ export default function WaterScreen() {
   const { profile } = useProfile();
 
   const glassAmountMl = 250;
-  const totalMl = waterGlasses.length * glassAmountMl;
+  const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const todayL = totalMl / 1000;
-  const goalL = profile?.dailyWaterGoalL ?? 2.5;
+  const goalL = profile.dailyWaterGoalL;
 
   const addGlass = () => {
-    if (todayL < goalL) {
-      const newGlass = {
-        id: `${Date.now()}-${Math.random()}`,
-        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-        amountMl: glassAmountMl,
-      };
-      setWaterGlasses(prev => [...prev, newGlass]);
-    }
+    setWaterGlasses(prev => {
+      const currentMl = prev.reduce((sum, glass) => sum + glass.amountMl, 0);
+      const remainingMl = Math.max(0, Math.round(goalL * 1000) - currentMl);
+      if (remainingMl === 0) return prev;
+
+      return [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          amountMl: Math.min(glassAmountMl, remainingMl),
+        },
+      ];
+    });
   };
 
   const removeGlass = () => {

@@ -3,46 +3,27 @@ import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { PlaceholderButton } from '@/components/placeholder-button';
-import { Alert } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { useHealthData } from '@/context/HealthDataContext';
-import { getAppointments, removeAppointment } from '@/utils/appointmentStorage';
-import { loadProfile } from '@/utils/profileStorage';
-import type { UserProfile } from '@/utils/profileStorage';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { useIsFocused } from 'expo-router';
-
-export type Appointment = {
-  id: string;
-  doctorId: string;
-  doctorName: string;
-  specialty: string;
-  date: string;
-  time: string;
-  timestamp: number;
-};
+import { Appointment, getAppointments, removeAppointment } from '@/utils/appointmentStorage';
+import { useProfile } from '@/hooks/useProfile';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 
 export default function ProfileScreen() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { profile, loading: profileLoading } = useProfile();
   const { weightHistory } = useHealthData();
   const router = useRouter();
-  const isFocused = useIsFocused();
 
   // Calculate current weight from weight history (most recent entry)
   const currentWeight = weightHistory.length > 0
     ? weightHistory[weightHistory.length - 1].kg
     : null;
 
-  useEffect(() => {
-    loadAppointments();
-  }, []);
-
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     try {
       const savedAppointments = await getAppointments();
       // Sort by timestamp ascending (upcoming first)
@@ -53,29 +34,13 @@ export default function ProfileScreen() {
     } finally {
       setAppointmentsLoading(false);
     }
-  };
+  }, []);
 
-  const loadUserProfile = async () => {
-    setProfileLoading(true);
-    try {
-      const savedProfile = await loadProfile();
-      setProfile(savedProfile);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadUserProfile();
-  }, []); // load on mount
-
-  useEffect(() => {
-    if (isFocused) {
-      loadUserProfile();
-    }
-  }, [isFocused]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadAppointments();
+    }, [loadAppointments]),
+  );
 
   const isLoading = appointmentsLoading || profileLoading;
 
@@ -110,7 +75,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScreenContainer inTabs title="Profile" subtitle="Local mock user. No authentication is used.">
+    <ScreenContainer inTabs title="Profile" subtitle="Manage your health details and appointments.">
       <SectionCard title="Account">
         {isLoading ? (
           <ThemedText>Loading profile data...</ThemedText>

@@ -3,8 +3,7 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PlaceholderButton } from '@/components/placeholder-button';
-import { Link } from 'expo-router';
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { Pressable, View, StyleSheet } from 'react-native';
 import { Spacing } from '@/constants/theme';
 
@@ -31,14 +30,14 @@ export default function AppointmentConfirmationScreen() {
   }
 
   return (
-    <ScreenContainer inTabs title="Appointment Confirmed" subtitle="Your appointment is booked">
+    <ScreenContainer inTabs title="Appointment saved" subtitle="You're all set">
       <SectionCard title="Appointment Details">
         <ThemedView type="backgroundSelected" style={styles.successBox}>
-          <ThemedText type="smallBold" themeColor="text" style={{ color: '#000000' }}>
-            Appointment Confirmed
+          <ThemedText type="smallBold" themeColor="text">
+            Appointment saved
           </ThemedText>
         </ThemedView>
-        <ThemedText>Your appointment has been successfully booked.</ThemedText>
+        <ThemedText>Your appointment details have been saved.</ThemedText>
         <View style={styles.detailRow}>
           <ThemedText themeColor="textSecondary">Doctor:</ThemedText>
           <ThemedText>{doctorName}</ThemedText>

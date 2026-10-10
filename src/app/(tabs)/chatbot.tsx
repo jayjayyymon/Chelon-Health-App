@@ -1,17 +1,23 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
 
 import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { TextInput } from 'react-native';
 import { useState } from 'react';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useTheme } from '@/hooks/use-theme';
+
+type ChatMessage = {
+  id: string;
+  from: 'user' | 'bot';
+  text: string;
+};
 
 export default function ChatbotScreen() {
-  const [messages, setMessages] = useState<Array<{id: string; from: 'user' | 'bot'; text: string}>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
 
   // Get current health data from context
@@ -22,7 +28,8 @@ export default function ChatbotScreen() {
     stepsHistory,
     dietMeals
   } = useHealthData();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
+  const theme = useTheme();
 
   // Helper function to calculate today's water intake in liters
   const getTodayWaterIntakeL = (): number => {
@@ -67,7 +74,7 @@ export default function ChatbotScreen() {
     // Water intake
     if (lowerInput.includes('water') || lowerInput.includes('drink') || lowerInput.includes('hydration')) {
       const todayL = getTodayWaterIntakeL();
-      const goalL = profile?.dailyWaterGoalL ?? 2.5;
+      const goalL = profile.dailyWaterGoalL;
       return `You've logged ${todayL.toFixed(1)} L of water today out of your ${goalL} L goal. Keep drinking!`;
     }
 
@@ -76,7 +83,7 @@ export default function ChatbotScreen() {
       const latest = getLatestWeight();
       if (latest) {
         const currentWeight = latest.kg;
-        const goalWeight = profile?.goalWeightKg ?? 68;
+        const goalWeight = profile.goalWeightKg;
         const weightDiff = currentWeight - goalWeight;
         if (weightDiff > 0) {
           return `Your current weight is ${currentWeight} kg, which is ${weightDiff.toFixed(1)} kg above your goal of ${goalWeight} kg.`;
@@ -106,8 +113,8 @@ export default function ChatbotScreen() {
       const latest = getLatestSteps();
       if (latest) {
         const todaySteps = latest.steps;
-        const goalSteps = profile?.dailyStepGoal ?? 8000;
-        return `You've taken ${todaySteps.toLocaleString()} steps today toward your goal of ${goalSteps.toLocaleString()} steps. Remember, this is simulated/manual data since device sensors aren't connected.`;
+        const goalSteps = profile.dailyStepGoal;
+        return `You've taken ${todaySteps.toLocaleString()} steps today toward your goal of ${goalSteps.toLocaleString()} steps. Keep building your daily movement routine.`;
       } else {
         return 'No step data recorded yet. Try adding some steps to see your progress!';
       }
@@ -126,8 +133,8 @@ export default function ChatbotScreen() {
 
     // Wellness/Mood
     if (lowerInput.includes('mood') || lowerInput.includes('feel') || lowerInput.includes('stress') || lowerInput.includes('anxiety') || lowerInput.includes('wellness')) {
-      // Since wellness data isn't stored in the main context, we'll give a general response
-      return 'Wellness check-ins help you reflect on your mood, stress, energy, and sleep. Consider taking one when you want to check in with yourself!';
+      const latestStatus = profile.wellnessStatus ?? 'not completed';
+      return `Your latest wellness check-in is ${latestStatus}. You can take another check-in whenever you want to reflect on how you are feeling.`;
     }
 
     // Doctors
@@ -137,12 +144,12 @@ export default function ChatbotScreen() {
 
     // Health centers
     if (lowerInput.includes('clinic') || lowerInput.includes('hospital') || lowerInput.includes('health center') || lowerInput.includes('nearby')) {
-      return 'There are 3 nearby health centers in the prototype. The closest is Riverside Clinic at 0.8 km away.';
+      return 'There are 3 nearby health centers. The closest is Riverside Clinic at 0.8 km away.';
     }
 
     // Profile/Goals
     if (lowerInput.includes('goal') || lowerInput.includes('target') || lowerInput.includes('profile')) {
-      return `Your health goals are: Weight ${profile?.goalWeightKg ?? 68} kg, Water ${profile?.dailyWaterGoalL ?? 2.5} L/day, Steps ${(profile?.dailyStepGoal ?? 8000).toLocaleString()}/day.`;
+      return `Your health goals are: Weight ${profile.goalWeightKg} kg, Water ${profile.dailyWaterGoalL} L/day, Steps ${profile.dailyStepGoal.toLocaleString()}/day.`;
     }
 
     // Help
@@ -155,6 +162,8 @@ export default function ChatbotScreen() {
   };
 
   const handleSendMessage = () => {
+    if (profileLoading) return;
+
     const text = inputText.trim();
     if (text === '') return;
 
@@ -198,15 +207,23 @@ export default function ChatbotScreen() {
         ))}
       </ThemedView>
 
-      <ThemedView type="backgroundSelected" style={styles.inputContainer}>
+      <ThemedView
+        type="backgroundSelected"
+        style={[styles.inputContainer, { borderColor: theme.textSecondary }]}
+      >
         <TextInput
-          placeholder="Type a message..."
+          placeholder={profileLoading ? 'Loading your health goals...' : 'Type a message...'}
           value={inputText}
           onChangeText={setInputText}
-          style={styles.input}
+          style={[styles.input, { color: theme.text, borderColor: theme.textSecondary }]}
+          placeholderTextColor={theme.textSecondary}
           onSubmitEditing={handleSendMessage}
+          editable={!profileLoading}
         />
-        <PlaceholderButton label="Send" onPress={handleSendMessage} />
+        <PlaceholderButton
+          label="Send"
+          onPress={profileLoading ? undefined : handleSendMessage}
+        />
       </ThemedView>
     </ScreenContainer>
   );
@@ -227,12 +244,12 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     padding: Spacing.two,
     borderTopWidth: 1,
-    borderColor: 'border',
+    borderColor: '#888',
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#888',
     borderRadius: Spacing.one,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,

@@ -1,4 +1,4 @@
-import { StyleSheet, View, Pressable } from 'react-native';
+import { Alert, StyleSheet, View, Pressable } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 
@@ -8,12 +8,15 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function WellnessScreen() {
   const router = useRouter();
+  const { profile, loading: profileLoading, saveProfile: saveProfileToStorage } = useProfile();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [step, setStep] = useState<'form' | 'result'>('form');
+  const [attemptedContinue, setAttemptedContinue] = useState(false);
 
   // Define the questionnaire
   const questions = [
@@ -72,20 +75,39 @@ export default function WellnessScreen() {
       ...prev,
       [currentQuestion.id]: value,
     }));
+    setAttemptedContinue(false);
   };
 
   // Check if current question is answered
   const isCurrentQuestionAnswered = answers[currentQuestion.id] !== undefined;
 
   // Handle going to next question or submitting
-  const handleNextOrSubmit = () => {
-    if (!isCurrentQuestionAnswered) return;
+  const handleNextOrSubmit = async () => {
+    if (!isCurrentQuestionAnswered) {
+      setAttemptedContinue(true);
+      return;
+    }
+
+    setAttemptedContinue(false);
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      // All questions answered, go to result step
-      setStep('result');
+      return;
     }
+
+    if (profileLoading) {
+      Alert.alert('Please wait', 'Your profile is still loading. Try submitting again in a moment.');
+      return;
+    }
+
+    const moodOption = questions[0].options.find(option => option.value === answers.mood);
+    const wellnessStatus = moodOption?.label ?? 'Completed';
+    const saved = await saveProfileToStorage({ ...profile, wellnessStatus });
+    if (!saved) {
+      Alert.alert('Unable to save check-in', 'Please try again.');
+      return;
+    }
+
+    setStep('result');
   };
 
   // Handle going back to previous question
@@ -99,6 +121,7 @@ export default function WellnessScreen() {
   const handleRetake = () => {
     setCurrentQuestionIndex(0);
     setAnswers({});
+    setAttemptedContinue(false);
     setStep('form');
   };
 
@@ -162,6 +185,8 @@ export default function WellnessScreen() {
     return suggestions.slice(0, 3);
   };
 
+  const suggestions = step === 'result' ? getSuggestions() : [];
+
   if (step === 'form') {
     return (
       <ScreenContainer subtitle="Reflect on your well-being with this quick check-in.">
@@ -200,18 +225,18 @@ export default function WellnessScreen() {
           {currentQuestionIndex < totalQuestions - 1 ? (
             <PlaceholderButton
               label="Next"
-              onPress={isCurrentQuestionAnswered ? handleNextOrSubmit : undefined}
+              onPress={handleNextOrSubmit}
             />
           ) : (
             <PlaceholderButton
               label="Submit"
-              onPress={isCurrentQuestionAnswered ? handleNextOrSubmit : undefined}
+              onPress={handleNextOrSubmit}
             />
           )}
         </View>
 
         {/* Validation message */}
-        {!isCurrentQuestionAnswered && answers && Object.keys(answers).length > 0 && (
+        {attemptedContinue && !isCurrentQuestionAnswered && (
           <ThemedText themeColor="textSecondary" style={styles.errorText}>
             Please answer the current question to continue.
           </ThemedText>
@@ -226,7 +251,7 @@ export default function WellnessScreen() {
       <SectionCard title="Your Wellness Check-In">
         {/* Friendly header */}
         <ThemedText type="smallBold" style={styles.resultHeader}>
-          Thanks for checking in! Here's what you shared:
+          Thanks for checking in! Here&apos;s what you shared:
         </ThemedText>
 
         {/* Answers summary */}
@@ -242,12 +267,12 @@ export default function WellnessScreen() {
         ))}
 
         {/* Suggestions section */}
-        {getSuggestions().length > 0 && (
+        {suggestions.length > 0 && (
           <View style={styles.suggestionsSection}>
             <ThemedText type="smallBold" style={styles.suggestionsHeader}>
               Friendly suggestions:
             </ThemedText>
-            {getSuggestions().map((suggestion, index) => (
+            {suggestions.map((suggestion, index) => (
               <ThemedText key={index} style={styles.suggestionText}>
                 • {suggestion}
               </ThemedText>

@@ -1,5 +1,14 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
+  },
+
+  
+  "tui": "default",
+  "env": {
+    "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "1",
+    "CLAUDE_CODE_DISABLE_MOUSE": "1"
   }
 }
+
+

@@ -1,134 +1,269 @@
-import { StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { NavCard } from '@/components/nav-card';
-import { ScreenContainer } from '@/components/screen-container';
+import { DashboardTrackerCard } from '@/components/dashboard-tracker-card';
+import {
+  DietIcon,
+  SleepIcon,
+  StepsIcon,
+  WaterIcon,
+  WeightIcon,
+} from '@/components/icons/tracker-icons';
 import { ThemedText } from '@/components/themed-text';
-import { careShortcuts, trackerShortcuts } from '@/data/mock-data';
-import { WeightChart } from '@/components/charts/WeightChart';
-import { WaterChart } from '@/components/charts/WaterChart';
-import { SleepChart } from '@/components/charts/SleepChart';
-import { StepsChart } from '@/components/charts/StepsChart';
+import { ThemedView } from '@/components/themed-view';
+import { DashboardColors, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
+import { trackerShortcuts } from '@/data/mock-data';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useProfile } from '@/hooks/useProfile';
+
+const trackerPresentation = {
+  '/diet': { title: 'Diet', icon: DietIcon, color: 'calorie' },
+  '/sleep': { title: 'Sleep', icon: SleepIcon, color: 'sleep' },
+  '/steps': { title: 'Steps', icon: StepsIcon, color: 'steps' },
+  '/water': { title: 'Water', icon: WaterIcon, color: 'water' },
+  '/weight': { title: 'Weight', icon: WeightIcon, color: 'weight' },
+  '/wellness': { title: 'Wellness', icon: '💚', color: 'wellness' },
+} as const;
 
 export default function DashboardScreen() {
   const { weightHistory, waterGlasses, sleepHistory, stepsHistory, dietMeals } = useHealthData();
   const { profile } = useProfile();
+  const scheme = useColorScheme();
+  const dashboardColors = DashboardColors[scheme === 'dark' ? 'dark' : 'light'];
 
-  // Compute latest weight
   const latestWeightEntry = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
-  const latestWeight = latestWeightEntry ? latestWeightEntry.kg : null;
-
-  // Compute water intake
+  const latestSleepEntry = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
+  const latestStepsEntry = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
   const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const totalL = totalMl / 1000;
-  const goalL = profile?.dailyWaterGoalL ?? 2.5;
+  const totalCalories = dietMeals.reduce((sum, meal) => sum + meal.calories, 0);
 
-  // Compute latest sleep
-  const latestSleepEntry = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
-  const latestSleepHours = latestSleepEntry ? latestSleepEntry.hours : null;
+  const dynamicTrackerShortcuts = trackerShortcuts.map((item) => {
+    const presentation = trackerPresentation[item.href];
+    const tracker = {
+      ...item,
+      ...presentation,
+      detail: item.detail,
+    };
 
-  // Compute latest steps
-  const latestStepsEntry = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
-  const latestSteps = latestStepsEntry ? latestStepsEntry.steps : 0;
-
-  // Build dynamic tracker shortcuts
-  const dynamicTrackerShortcuts = trackerShortcuts.map(item => {
-    // We'll create a new object based on the original, but override value and detail for dynamic ones
-    const newItem = { ...item };
     switch (item.href) {
       case '/water':
-        newItem.value = `${totalL.toFixed(1)} L`;
-        newItem.detail = `Goal ${goalL} L`;
+        tracker.value = `${totalL.toFixed(1)} L`;
+        tracker.detail = `Goal ${profile.dailyWaterGoalL} L`;
         break;
       case '/weight':
-        newItem.value = latestWeight !== null ? `${latestWeight.toFixed(1)} kg` : '-- kg';
-        newItem.detail = latestWeight !== null ? 'Latest entry' : 'No data';
+        tracker.value = latestWeightEntry ? `${latestWeightEntry.kg.toFixed(1)} kg` : '-- kg';
+        tracker.detail = latestWeightEntry ? 'Latest entry' : 'No data';
         break;
       case '/sleep':
-        newItem.value = latestSleepHours !== null ? `${latestSleepHours.toFixed(1)} hrs` : '-- hrs';
-        newItem.detail = latestSleepHours !== null ? 'Last night' : 'No sleep data';
+        tracker.value = latestSleepEntry ? `${latestSleepEntry.hours.toFixed(1)} hrs` : '-- hrs';
+        tracker.detail = latestSleepEntry ? 'Last night' : 'No sleep data';
         break;
       case '/steps':
-        newItem.value = latestSteps.toLocaleString();
-        newItem.detail = `Goal ${profile?.dailyStepGoal ?? 8000} steps`;
+        tracker.value = latestStepsEntry ? latestStepsEntry.steps.toLocaleString() : '0';
+        tracker.detail = `Goal ${profile.dailyStepGoal} steps`;
         break;
       case '/diet':
-        const totalCalories = dietMeals.reduce((sum, meal) => sum + meal.calories, 0);
-        newItem.value = `${totalCalories} kcal`;
-        newItem.detail = `${dietMeals.length} meals logged`;
+        tracker.value = `${totalCalories.toLocaleString()} kcal`;
+        tracker.detail = `${dietMeals.length} meals logged`;
         break;
-      // For wellness, we keep the original values from mock data
-      default:
+      case '/wellness':
+        tracker.value = profile.wellnessStatus ?? 'Not completed';
+        tracker.detail = 'Today’s check-in';
         break;
     }
-    return newItem;
+
+    return {
+      ...tracker,
+      color: dashboardColors[tracker.color],
+    };
   });
 
-  // Subtitle: greeting and note that data is current
-  const subtitle = `Welcome back, ${profile?.name ?? 'User'}. Your health data is up to date.`;
+  const orderedTrackers = ['/water', '/sleep', '/weight', '/steps', '/diet'];
+  const orderedShortcuts = orderedTrackers
+    .map((href) => dynamicTrackerShortcuts.find((item) => item.href === href))
+    .filter((item) => item !== undefined);
+  const trackerRows = [
+    orderedShortcuts.slice(0, 2),
+    orderedShortcuts.slice(2, 4),
+    orderedShortcuts.slice(4, 5),
+  ];
 
   return (
-    <ScreenContainer
-      inTabs
-      title="Dashboard"
-      subtitle={subtitle}
-    >
-      <ThemedText type="smallBold">Charts</ThemedText>
-      <View style={styles.chartsGrid}>
-        <View style={styles.chartItem}>
-          <WeightChart width={140} height={100} showLabel={false} />
-        </View>
-        <View style={styles.chartItem}>
-          <WaterChart width={140} height={100} showLabel={false} />
-        </View>
-        <View style={styles.chartItem}>
-          <SleepChart width={140} height={100} showLabel={false} />
-        </View>
-        <View style={styles.chartItem}>
-          <StepsChart width={140} height={100} showLabel={false} />
-        </View>
-      </View>
+    <ThemedView style={styles.root}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <ThemedText style={styles.wordmark}>CHELON</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open settings"
+                hitSlop={8}
+                onPress={() => {}}
+                style={({ pressed }) => pressed && styles.settingsPressed}>
+                <ThemedView type="backgroundElement" style={styles.settingsButton}>
+                  <ThemedText style={styles.settingsIcon}>⚙</ThemedText>
+                </ThemedView>
+              </Pressable>
+            </View>
 
-      <ThemedText type="smallBold">Trackers</ThemedText>
-      <View style={styles.grid}>
-        {dynamicTrackerShortcuts.map((item) => (
-          <View key={item.href} style={styles.gridItem}>
-            <NavCard {...item} />
+            <ThemedView type="backgroundElement" style={styles.greetingCard}>
+              <View style={styles.greetingText}>
+                <ThemedText type="small">Hello,</ThemedText>
+                <ThemedText numberOfLines={1} style={styles.greetingName}>
+                  {profile.name}! 👋
+                </ThemedText>
+              </View>
+              <View style={styles.mascotFrame}>
+                <Image
+                  source={require('../../../assets/images/turtle-avatar.png')}
+                  accessibilityLabel="Friendly turtle mascot"
+                  resizeMode="contain"
+                  style={styles.mascotImage}
+                />
+              </View>
+            </ThemedView>
+
+            <View style={styles.sectionHeader}>
+              <ThemedText style={styles.sectionTitle}>TRACKERS</ThemedText>
+            </View>
+
+            <View style={styles.trackerGrid}>
+              {trackerRows.map((row, rowIndex) => (
+                <View key={`tracker-row-${rowIndex}`} style={styles.trackerRow}>
+                  {row.map((item) => (
+                    <View key={item.href} style={styles.trackerCell}>
+                      <DashboardTrackerCard
+                        href={item.href}
+                        title={item.title}
+                        icon={item.icon}
+                        color={item.color}
+                      />
+                    </View>
+                  ))}
+                  {rowIndex === 2 && <View style={styles.trackerCell} />}
+                </View>
+              ))}
+            </View>
           </View>
-        ))}
-      </View>
-
-      <ThemedText type="smallBold">Care</ThemedText>
-      <View style={styles.stack}>
-        {careShortcuts.map((item) => (
-          <NavCard key={item.href} {...item} />
-        ))}
-      </View>
-    </ScreenContainer>
+        </SafeAreaView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  chartsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
+  root: {
+    flex: 1,
   },
-  chartItem: {
-    width: '48%',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  gridItem: {
-    width: '48%',
+  scrollContent: {
     flexGrow: 1,
+    paddingBottom: Spacing.four,
   },
-  stack: {
-    gap: 12,
+  safeArea: {
+    width: '100%',
+  },
+  content: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    gap: Spacing.three,
+  },
+  header: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.one,
+  },
+  wordmark: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    letterSpacing: -0.7,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+  },
+  settingsPressed: {
+    opacity: 0.7,
+  },
+  settingsIcon: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
+  greetingCard: {
+    minHeight: 76,
+    borderRadius: 18,
+    paddingHorizontal: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 5,
+  },
+  greetingText: {
+    flex: 1,
+    gap: 1,
+  },
+  greetingName: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '800',
+  },
+  mascotFrame: {
+    width: 72,
+    height: 72,
+    marginLeft: Spacing.two,
+    overflow: 'hidden',
+  },
+  mascotImage: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    left: -38,
+    top: -86,
+  },
+  sectionHeader: {
+    marginTop: Spacing.one,
+    paddingHorizontal: Spacing.one,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '800',
+    color: '#858585',
+  },
+  trackerGrid: {
+    width: '100%',
+    gap: Spacing.three,
+  },
+  trackerRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  trackerCell: {
+    flex: 1,
+    minWidth: 0,
   },
 });

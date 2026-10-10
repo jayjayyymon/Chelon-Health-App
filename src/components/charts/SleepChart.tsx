@@ -32,13 +32,12 @@ export const SleepChart: React.FC<SleepChartProps> = ({
   const hours = sleepData.map(d => d.hours);
   const minHours = Math.min(...hours);
   const maxHours = Math.max(...hours);
-  const range = maxHours - minHours;
   const adjustedMin = minHours - 1; // Add padding
   const adjustedMax = maxHours + 1;
   const adjustedRange = adjustedMax - adjustedMin;
 
   const scaleX = (index: number) =>
-    padding + (index / (sleepData.length - 1)) * chartWidth;
+    padding + (index / Math.max(sleepData.length - 1, 1)) * chartWidth;
 
   const scaleY = (hours: number) =>
     padding + chartHeight - ((hours - adjustedMin) / adjustedRange) * chartHeight;

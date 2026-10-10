@@ -16,14 +16,10 @@ export const userProfile = {
   name: 'Alex Rivera',
   age: 28,
   heightCm: 170,
-  goalWeightKg: 68,
-  dailyWaterGoalL: 2.5,
-  dailyStepGoal: 8000,
 };
 
 export const waterSummary = {
   todayL: 1.5,
-  goalL: 2.5,
   glasses: [
     { id: 'w1', time: '8:10 AM', amountMl: 250 },
     { id: 'w2', time: '10:40 AM', amountMl: 250 },
@@ -50,7 +46,6 @@ export const sleepLastNight = {
 
 export const stepsToday = {
   count: 6240,
-  goal: 8000,
   distanceKm: 4.6,
   activeMinutes: 48,
 };
@@ -67,7 +62,7 @@ export const chatbotMessages = [
   {
     id: 'c3',
     from: 'bot' as const,
-    text: 'Your mock goal is 2.5 L. You have logged 1.5 L so far.',
+    text: 'I can help summarize your water intake and daily goal.',
   },
 ];
 
@@ -96,23 +91,41 @@ export const healthCenters = [
 ];
 
 export const doctors = [
-  { id: 'd1', name: 'Dr. Maya Chen', specialty: 'General practice', nextSlot: 'Tomorrow, 10:30 AM' },
-  { id: 'd2', name: 'Dr. Omar Hassan', specialty: 'Nutrition', nextSlot: 'Fri, 2:00 PM' },
-  { id: 'd3', name: 'Dr. Priya Nair', specialty: 'Sleep medicine', nextSlot: 'Mon, 9:15 AM' },
+  {
+    id: 'd1',
+    name: 'Dr. Maya Chen',
+    specialty: 'General practice',
+    nextSlot: 'Tomorrow, 10:30 AM',
+    availableTimes: ['10:30', '11:00', '14:00', '15:30'],
+  },
+  {
+    id: 'd2',
+    name: 'Dr. Omar Hassan',
+    specialty: 'Nutrition',
+    nextSlot: 'Fri, 2:00 PM',
+    availableTimes: ['14:00', '14:30', '15:00', '16:00'],
+  },
+  {
+    id: 'd3',
+    name: 'Dr. Priya Nair',
+    specialty: 'Sleep medicine',
+    nextSlot: 'Mon, 9:15 AM',
+    availableTimes: ['09:15', '10:00', '10:30', '11:00'],
+  },
 ];
 
 export const trackerShortcuts: TrackerShortcut[] = [
-  { href: '/water', title: 'Water', value: '1.5 L', detail: 'Goal 2.5 L' },
+  { href: '/water', title: 'Water', value: '1.5 L', detail: 'Daily goal' },
   { href: '/diet', title: 'Diet', value: '1,010 kcal', detail: '3 meals logged' },
   { href: '/weight', title: 'Weight', value: '70.4 kg', detail: 'Latest entry' },
   { href: '/sleep', title: 'Sleep', value: '7.2 hrs', detail: 'Last night' },
-  { href: '/steps', title: 'Steps', value: '6,240', detail: 'Goal 8,000' },
+  { href: '/steps', title: 'Steps', value: '6,240', detail: 'Daily goal' },
   { href: '/wellness', title: 'Wellness', value: 'Okay', detail: 'Today’s check-in' },
 ];
 
 export const careShortcuts: CareShortcut[] = [
-  { href: '/chatbot', title: 'Chatbot', value: 'Ask a question', detail: 'Rule-based helper later' },
-  { href: '/health-centers', title: 'Health Centers', value: '3 nearby', detail: 'Mock locations' },
-  { href: '/doctors', title: 'Doctors', value: '3 available', detail: 'Mock consultations' },
+  { href: '/chatbot', title: 'Chatbot', value: 'Ask a question', detail: 'Personal health guidance' },
+  { href: '/health-centers', title: 'Health Centers', value: '3 nearby', detail: 'Nearby care options' },
+  { href: '/doctors', title: 'Doctors', value: '3 available', detail: 'Available consultations' },
   { href: '/profile', title: 'Profile', value: userProfile.name, detail: 'Goals and details' },
 ];

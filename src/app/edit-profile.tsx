@@ -1,10 +1,10 @@
-import { StyleSheet, View, Text, Platform, Alert } from 'react-native';
+import { View, Alert, TextInput } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
+import { useTheme } from '@/hooks/use-theme';
 
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
-import { InfoRow } from '@/components/info-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PlaceholderButton } from '@/components/placeholder-button';
@@ -12,19 +12,11 @@ import { useProfile } from '@/hooks/useProfile';
 import { useHealthData } from '@/context/HealthDataContext';
 import { Spacing } from '@/constants/theme';
 
-export type UserProfile = {
-  name: string;
-  age: number;
-  heightCm: number;
-  goalWeightKg: number;
-  dailyWaterGoalL: number;
-  dailyStepGoal: number;
-};
-
 export default function EditProfileScreen() {
-  const { profile, loading, updateProfile, saveProfile: saveProfileToStorage } = useProfile();
+  const { profile, loading, saveProfile: saveProfileToStorage } = useProfile();
   const { weightHistory, addWeight } = useHealthData();
   const [isSaving, setIsSaving] = useState(false);
+  const theme = useTheme();
 
   // Form state as strings (user input)
   const [nameInput, setNameInput] = useState('');
@@ -72,37 +64,38 @@ export default function EditProfileScreen() {
       setNameError(null);
     }
 
-    // Validate weight: if not empty, must be valid weight between 30-300 kg
-    const weightValue = parseFloat(weightInput);
-    const isWeightNumeric = !isNaN(weightValue) && weightInput.trim() !== '';
-    if (isWeightNumeric) {
-      if (weightValue <= 0) {
-        setWeightError('Please enter a valid weight');
-        isValid = false;
-      } else if (weightValue < 30 || weightValue > 300) {
+    // A blank weight means keep the current measurement.
+    const trimmedWeight = weightInput.trim();
+    if (trimmedWeight === '') {
+      setWeightError(null);
+    } else if (!/^\d+(?:\.\d+)?$/.test(trimmedWeight) || !Number.isFinite(Number(trimmedWeight))) {
+      setWeightError('Enter a valid weight, such as 72.5 kg');
+      isValid = false;
+    } else {
+      const weightValue = Number(trimmedWeight);
+      if (weightValue < 30 || weightValue > 300) {
         setWeightError('Weight must be between 30-300 kg');
         isValid = false;
       } else {
         setWeightError(null);
       }
-    } else {
-      // Empty or non-numeric means keep existing weight - no error
-      setWeightError(null);
     }
 
-    // Validate height: if not empty, must be valid height between 100-250 cm
-    const heightValue = parseInt(heightInput, 10);
-    const isHeightValid = !isNaN(heightValue) && heightInput.trim() !== '' && heightValue > 0;
-    if (isHeightValid) {
+    // Height is a whole number; a blank value keeps the current height.
+    const trimmedHeight = heightInput.trim();
+    if (trimmedHeight === '') {
+      setHeightError(null);
+    } else if (!/^\d+$/.test(trimmedHeight) || !Number.isFinite(Number(trimmedHeight))) {
+      setHeightError('Enter height as a whole number in centimeters');
+      isValid = false;
+    } else {
+      const heightValue = Number(trimmedHeight);
       if (heightValue < 100 || heightValue > 250) {
         setHeightError('Height must be between 100-250 cm');
         isValid = false;
       } else {
         setHeightError(null);
       }
-    } else {
-      // Empty or non-numeric means keep existing height - no error
-      setHeightError(null);
     }
 
     return isValid;
@@ -117,43 +110,29 @@ export default function EditProfileScreen() {
     setIsSaving(true);
 
     try {
-      // Determine values to save: use input if valid, otherwise keep existing
-      const nameToSave = nameInput.trim() !== '' ? nameInput.trim() : (profile?.name ?? '');
-
-      const weightValue = parseFloat(weightInput);
-      const isWeightValid = !isNaN(weightValue) && weightInput.trim() !== '' && weightValue > 0;
-      const weightToSave = isWeightValid ? weightValue : (weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].kg : profile?.goalWeightKg ?? 68);
-
-      const heightValue = parseInt(heightInput, 10);
-      const isHeightValid = !isNaN(heightValue) && heightInput.trim() !== '' && heightValue > 0;
-      const heightToSave = isHeightValid ? heightValue : (profile?.heightCm ?? 170);
+      const nameToSave = nameInput.trim() !== '' ? nameInput.trim() : profile.name;
+      const weightValue = weightInput.trim() === '' ? null : Number(weightInput.trim());
+      const heightToSave = heightInput.trim() === '' ? profile.heightCm : Number(heightInput.trim());
 
       // Build the profile object to save
       const profileToSave = {
+        ...profile,
         name: nameToSave,
-        age: profile?.age ?? 28,
         heightCm: heightToSave,
-        goalWeightKg: profile?.goalWeightKg ?? 68,
-        dailyWaterGoalL: profile?.dailyWaterGoalL ?? 2.0,
-        dailyStepGoal: profile?.dailyStepGoal ?? 8000
       };
-
-      // Update profile in state
-      updateProfile(profileToSave);
 
       // Save to persistent storage
       const saved = await saveProfileToStorage(profileToSave);
 
       if (saved) {
-        // If weight changed, add to weight history
+        // Only create a measurement when the user explicitly entered one.
         const latestWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].kg : null;
-        if (latestWeight !== weightToSave) {
-          const newWeightEntry = {
+        if (weightValue !== null && latestWeight !== weightValue) {
+          addWeight({
             id: `wt-${Date.now()}`,
             date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            kg: weightToSave
-          };
-          addWeight(newWeightEntry);
+            kg: weightValue,
+          });
         }
         // Show success and navigate back
         Alert.alert(
@@ -183,11 +162,10 @@ export default function EditProfileScreen() {
     setWeightError(null);
     setHeightError(null);
 
-    // Navigate back - in a real app we'd use navigation, but for now we'll just reset
-    // Note: Actual navigation would be handled by the calling screen
+    router.back();
   };
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <ScreenContainer title="Edit Profile">
         <ThemedText>Loading profile...</ThemedText>
@@ -196,8 +174,8 @@ export default function EditProfileScreen() {
   }
 
   // Calculate current values for placeholders
-  const currentWeightValue = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].kg : (profile?.goalWeightKg ?? 68);
-  const currentHeightValue = profile?.heightCm ?? 170;
+  const currentWeightValue = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].kg : null;
+  const currentHeightValue = profile.heightCm;
 
   return (
     <ScreenContainer title="Edit Profile">
@@ -212,7 +190,8 @@ export default function EditProfileScreen() {
               placeholder={profile?.name ?? ''}
               value={nameInput}
               onChangeText={handleNameChange}
-              style={{fontSize: 16}}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
               autoCapitalize="words"
             />
           </ThemedView>
@@ -226,10 +205,11 @@ export default function EditProfileScreen() {
           <ThemedText type="smallBold">Current Weight (kg)</ThemedText>
           <ThemedView type="backgroundSelected" style={{padding: Spacing.one, marginVertical: Spacing.two}}>
             <TextInput
-              placeholder={currentWeightValue.toString() + ' kg'}
+              placeholder={currentWeightValue !== null ? `${currentWeightValue} kg` : 'Not set'}
               value={weightInput}
               onChangeText={handleWeightChange}
-              style={{fontSize: 16}}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
               keyboardType="numeric"
             />
           </ThemedView>
@@ -246,7 +226,8 @@ export default function EditProfileScreen() {
               placeholder={currentHeightValue.toString() + ' cm'}
               value={heightInput}
               onChangeText={handleHeightChange}
-              style={{fontSize: 16}}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
               keyboardType="numeric"
             />
           </ThemedView>
@@ -276,6 +257,3 @@ export default function EditProfileScreen() {
     </ScreenContainer>
   );
 }
-
-// We need to import TextInput here since it's used above
-import { TextInput } from 'react-native';

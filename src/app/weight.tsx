@@ -1,47 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { InfoRow } from '@/components/info-row';
-import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
-import { TouchableOpacity } from 'react-native';
+import { TextInput, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TextInput } from 'react-native';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useProfile } from '@/hooks/useProfile';
 import { useHealthData } from '@/context/HealthDataContext';
 
 export default function WeightScreen() {
   const { weightHistory, addWeight } = useHealthData();
   const { profile } = useProfile();
+  const theme = useTheme();
   const [inputWeight, setInputWeight] = useState('');
   const [weightChangeStatus, setWeightChangeStatus] = useState<string | null>(null); // 'increased', 'decreased', or null
   const [error, setError] = useState<string | null>(null);
 
   // Compute latest weight and current weight from context's weightHistory
-  const latest = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : { id: '', date: '', kg: 0 };
-  const currentWeight = latest.kg;
+  const latest = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
+  const currentWeight = latest?.kg ?? null;
 
   const handleWeightChange = (text: string) => {
-    // Allow digits, decimal point, and minus sign
-    let cleaned = text.replace(/[^0-9.-]/g, '');
-    // Ensure at most one minus sign, and only at the beginning
-    if (cleaned.indexOf('-') > 0) {
-      // minus sign not at beginning
-      cleaned = cleaned.replace(/-/g, '');
-    }
-    // If there is a minus sign, keep only the first one
-    const minusIndex = cleaned.indexOf('-');
-    if (minusIndex > -1) {
-      cleaned = '-' + cleaned.slice(minusIndex + 1).replace(/-/g, '');
-    }
-    // Ensure at most one decimal point
-    const parts = cleaned.split('.');
-    if (parts.length > 2) {
-      setInputWeight(parts[0] + '.' + parts.slice(1).join(''));
-    } else {
-      setInputWeight(cleaned);
-    }
+    setInputWeight(text);
+    setError(null);
   };
 
   const validateWeight = (value: string): string | null => {
@@ -52,10 +35,10 @@ export default function WeightScreen() {
     if (trimmed.startsWith('-')) {
       return 'Please enter a positive weight';
     }
-    if (!/^\d+(\.\d{0,1})?$/.test(trimmed)) {
+    if (!/^\d+(?:\.\d)?$/.test(trimmed)) {
       return 'Please enter a valid weight (up to one decimal place)';
     }
-    const num = parseFloat(trimmed);
+    const num = Number(trimmed);
     if (num < 1 || num > 500) {
       return 'Weight must be between 1 kg and 500 kg';
     }
@@ -72,12 +55,16 @@ export default function WeightScreen() {
 
     const weightValue = parseFloat(inputWeight.trim());
 
-    // Determine if weight increased or decreased
-    const weightChange = weightValue - latest.kg;
-    if (weightChange > 0) {
-      setWeightChangeStatus('increased');
-    } else if (weightChange < 0) {
-      setWeightChangeStatus('decreased');
+    // Determine if weight increased or decreased when a previous entry exists
+    if (latest) {
+      const weightChange = weightValue - latest.kg;
+      if (weightChange > 0) {
+        setWeightChangeStatus('increased');
+      } else if (weightChange < 0) {
+        setWeightChangeStatus('decreased');
+      } else {
+        setWeightChangeStatus(null);
+      }
     } else {
       setWeightChangeStatus(null);
     }
@@ -95,17 +82,17 @@ export default function WeightScreen() {
   };
 
   return (
-    <ScreenContainer subtitle={`Latest weight is ${currentWeight} kg. Goal is ${profile?.goalWeightKg ?? 68} kg.`}>
+    <ScreenContainer subtitle={`Latest weight is ${currentWeight !== null ? `${currentWeight} kg` : 'not set'}. Goal is ${profile.goalWeightKg} kg.`}>
       <SectionCard title="Current">
-        <InfoRow label="Latest" value={`${currentWeight} kg`} />
-        <InfoRow label="Goal" value={`${(profile?.goalWeightKg ?? 68)} kg`} />
+        <InfoRow label="Latest" value={currentWeight !== null ? `${currentWeight} kg` : '--'} />
+        <InfoRow label="Goal" value={`${profile.goalWeightKg} kg`} />
         {weightChangeStatus && (
           <InfoRow
             label="Change"
             value={weightChangeStatus === 'increased' ? 'Increased' : 'Decreased'}
           />
         )}
-        <InfoRow label="Date" value={latest.date} />
+        <InfoRow label="Date" value={latest?.date ?? 'No entry yet'} />
       </SectionCard>
 
       <SectionCard title="Log Your Weight">
@@ -115,7 +102,7 @@ export default function WeightScreen() {
             type="background"
             style={{
               borderWidth: 1,
-              borderColor: 'border',
+              borderColor: theme.textSecondary,
               borderRadius: Spacing.one,
               paddingHorizontal: Spacing.two,
               paddingVertical: Spacing.one,
@@ -125,8 +112,9 @@ export default function WeightScreen() {
             }}
           >
             <TextInput
-              style={{flex: 1, fontSize: 16, color: '#FFFFFF'}}
+              style={{flex: 1, fontSize: 16, color: theme.text}}
               placeholder="Enter weight"
+              placeholderTextColor={theme.textSecondary}
               keyboardType="decimal-pad"
               value={inputWeight}
               onChangeText={handleWeightChange}

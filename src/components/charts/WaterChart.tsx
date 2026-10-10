@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Svg, Rect as SvgRect, Text as SvgText } from 'react-native-svg';
 import { useHealthData } from '@/context/HealthDataContext';
-import { userProfile } from '@/data/mock-data';
+import { useProfile } from '@/hooks/useProfile';
 
 type WaterChartProps = {
   width?: number;
@@ -16,6 +16,7 @@ export const WaterChart: React.FC<WaterChartProps> = ({
   showLabel = true
 }) => {
   const { waterGlasses } = useHealthData();
+  const { profile } = useProfile();
   const glasses = waterGlasses;
 
   if (glasses.length === 0) {
@@ -28,7 +29,7 @@ export const WaterChart: React.FC<WaterChartProps> = ({
 
   const totalMl = glasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const todayL = totalMl / 1000;
-  const goalL = userProfile.dailyWaterGoalL; // from user profile
+  const goalL = profile.dailyWaterGoalL;
 
   const padding = 20;
   const chartWidth = width - padding * 2;

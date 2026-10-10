@@ -7,6 +7,7 @@ export type UserProfile = {
   goalWeightKg: number;
   dailyWaterGoalL: number;
   dailyStepGoal: number;
+  wellnessStatus?: string;
 };
 
 const STORAGE_KEY = '@healthapp_userProfile';
@@ -21,6 +22,7 @@ export const getDefaultProfile = (): UserProfile => ({
   goalWeightKg: 68,
   dailyWaterGoalL: 2.5,
   dailyStepGoal: 8000,
+  wellnessStatus: 'Okay',
 });
 
 /**
@@ -30,9 +32,33 @@ export const loadProfile = async (): Promise<UserProfile> => {
   try {
     const profileJson = await AsyncStorage.getItem(STORAGE_KEY);
     if (profileJson !== null) {
-      return JSON.parse(profileJson);
+      const parsed = JSON.parse(profileJson) as Partial<UserProfile> | null;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const defaults = getDefaultProfile();
+        return {
+          ...defaults,
+          ...parsed,
+          name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name : defaults.name,
+          age: typeof parsed.age === 'number' && Number.isFinite(parsed.age) ? parsed.age : defaults.age,
+          heightCm: typeof parsed.heightCm === 'number' && Number.isFinite(parsed.heightCm)
+            ? parsed.heightCm
+            : defaults.heightCm,
+          goalWeightKg: typeof parsed.goalWeightKg === 'number' && Number.isFinite(parsed.goalWeightKg)
+            ? parsed.goalWeightKg
+            : defaults.goalWeightKg,
+          dailyWaterGoalL: typeof parsed.dailyWaterGoalL === 'number' && Number.isFinite(parsed.dailyWaterGoalL)
+            ? parsed.dailyWaterGoalL
+            : defaults.dailyWaterGoalL,
+          dailyStepGoal: typeof parsed.dailyStepGoal === 'number' && Number.isFinite(parsed.dailyStepGoal)
+            ? parsed.dailyStepGoal
+            : defaults.dailyStepGoal,
+          wellnessStatus: typeof parsed.wellnessStatus === 'string'
+            ? parsed.wellnessStatus
+            : defaults.wellnessStatus,
+        };
+      }
     }
-    // Return default profile if none saved
+    // Return default profile if none saved or stored data is invalid
     return getDefaultProfile();
   } catch (error) {
     console.error('Failed to load profile:', error);

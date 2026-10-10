@@ -1,29 +1,19 @@
-import { StyleSheet, View, Text, Platform, Alert } from 'react-native';
+import { View, TextInput, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
-import { InfoRow } from '@/components/info-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PlaceholderButton } from '@/components/placeholder-button';
 import { useProfile } from '@/hooks/useProfile';
-import { useHealthData } from '@/context/HealthDataContext';
 import { Spacing } from '@/constants/theme';
-
-export type UserProfile = {
-  name: string;
-  age: number;
-  heightCm: number;
-  goalWeightKg: number;
-  dailyWaterGoalL: number;
-  dailyStepGoal: number;
-};
+import { useTheme } from '@/hooks/use-theme';
 
 export default function EditGoalsScreen() {
-  const { profile, loading, updateProfile, saveProfile: saveProfileToStorage } = useProfile();
-  const { weightHistory, addWeight } = useHealthData();
+  const { profile, loading, saveProfile: saveProfileToStorage } = useProfile();
+  const theme = useTheme();
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state as strings (user input)
@@ -58,38 +48,42 @@ export default function EditGoalsScreen() {
   const validateForm = () => {
     let isValid = true;
 
-    // Validate goal weight: if not empty, must be valid weight between 30-300 kg
-    const goalWeightValue = parseFloat(goalWeightInput);
-    const isGoalWeightValid = !isNaN(goalWeightValue) && goalWeightInput.trim() !== '' && goalWeightValue > 0;
-    if (isGoalWeightValid) {
-      if (goalWeightValue < 30 || goalWeightValue > 300) {
-        setGoalWeightError('Weight must be between 30-300 kg');
-        isValid = false;
-      } else {
-        setGoalWeightError(null);
-      }
+    const trimmedGoalWeight = goalWeightInput.trim();
+    if (trimmedGoalWeight === '') {
+      setGoalWeightError(null);
+    } else if (!/^\d+(?:\.\d+)?$/.test(trimmedGoalWeight) || !Number.isFinite(Number(trimmedGoalWeight))) {
+      setGoalWeightError('Enter a valid goal weight, such as 68.5 kg');
+      isValid = false;
+    } else if (Number(trimmedGoalWeight) < 30 || Number(trimmedGoalWeight) > 300) {
+      setGoalWeightError('Weight must be between 30-300 kg');
+      isValid = false;
     } else {
-      // Empty or non-numeric means keep existing goal weight - no error
       setGoalWeightError(null);
     }
 
-    // Validate daily water goal: if not empty, must be positive number
-    const dailyWaterGoalValue = parseFloat(dailyWaterGoalInput);
-    const isDailyWaterGoalValid = !isNaN(dailyWaterGoalValue) && dailyWaterGoalInput.trim() !== '' && dailyWaterGoalValue > 0;
-    if (isDailyWaterGoalValid) {
+    const trimmedWaterGoal = dailyWaterGoalInput.trim();
+    if (trimmedWaterGoal === '') {
       setDailyWaterGoalError(null);
+    } else if (!/^\d+(?:\.\d+)?$/.test(trimmedWaterGoal) || !Number.isFinite(Number(trimmedWaterGoal))) {
+      setDailyWaterGoalError('Enter a valid water goal, such as 2.5 L');
+      isValid = false;
+    } else if (Number(trimmedWaterGoal) <= 0) {
+      setDailyWaterGoalError('Water goal must be greater than 0 L');
+      isValid = false;
     } else {
-      // Empty or non-numeric means keep existing water goal - no error
       setDailyWaterGoalError(null);
     }
 
-    // Validate daily step goal: if not empty, must be positive number
-    const dailyStepGoalValue = parseInt(dailyStepGoalInput, 10);
-    const isDailyStepGoalValid = !isNaN(dailyStepGoalValue) && dailyStepGoalInput.trim() !== '' && dailyStepGoalValue > 0;
-    if (isDailyStepGoalValid) {
+    const trimmedStepGoal = dailyStepGoalInput.trim();
+    if (trimmedStepGoal === '') {
       setDailyStepGoalError(null);
+    } else if (!/^\d+$/.test(trimmedStepGoal) || !Number.isFinite(Number(trimmedStepGoal))) {
+      setDailyStepGoalError('Enter a whole-number step goal');
+      isValid = false;
+    } else if (Number(trimmedStepGoal) <= 0) {
+      setDailyStepGoalError('Step goal must be greater than 0');
+      isValid = false;
     } else {
-      // Empty or non-numeric means keep existing step goal - no error
       setDailyStepGoalError(null);
     }
 
@@ -105,37 +99,16 @@ export default function EditGoalsScreen() {
     setIsSaving(true);
 
     try {
-      // Goal weight validation
-      const goalWeightValue = parseFloat(goalWeightInput);
-      const isGoalWeightValid = !isNaN(goalWeightValue) && goalWeightInput.trim() !== '' && goalWeightValue > 0;
-      const goalWeightToSave = isGoalWeightValid ? goalWeightValue : (profile?.goalWeightKg ?? 68);
-
-      // Daily water goal validation
-      const dailyWaterGoalValue = parseFloat(dailyWaterGoalInput);
-      const isDailyWaterGoalValid = !isNaN(dailyWaterGoalValue) && dailyWaterGoalInput.trim() !== '' && dailyWaterGoalValue > 0;
-      const dailyWaterGoalToSave = isDailyWaterGoalValid ? dailyWaterGoalValue : (profile?.dailyWaterGoalL ?? 2.5);
-
-      // Daily step goal validation
-      const dailyStepGoalValue = parseInt(dailyStepGoalInput, 10);
-      const isDailyStepGoalValid = !isNaN(dailyStepGoalValue) && dailyStepGoalInput.trim() !== '' && dailyStepGoalValue > 0;
-      const dailyStepGoalToSave = isDailyStepGoalValid ? dailyStepGoalValue : (profile?.dailyStepGoal ?? 8000);
+      const goalWeightToSave = goalWeightInput.trim() === '' ? profile.goalWeightKg : Number(goalWeightInput.trim());
+      const dailyWaterGoalToSave = dailyWaterGoalInput.trim() === '' ? profile.dailyWaterGoalL : Number(dailyWaterGoalInput.trim());
+      const dailyStepGoalToSave = dailyStepGoalInput.trim() === '' ? profile.dailyStepGoal : Number(dailyStepGoalInput.trim());
 
       // Build the profile object to save (only update goals)
-      const profileToSave = {
+      const fullProfileToSave = {
+        ...profile,
         goalWeightKg: goalWeightToSave,
         dailyWaterGoalL: dailyWaterGoalToSave,
-        dailyStepGoal: dailyStepGoalToSave
-      };
-
-      // Update profile in state
-      updateProfile(profileToSave);
-
-      // Build full profile object for storage
-      const fullProfileToSave = {
-        name: profile?.name ?? '',
-        age: profile?.age ?? 28,
-        heightCm: profile?.heightCm ?? 170,
-        ...profileToSave
+        dailyStepGoal: dailyStepGoalToSave,
       };
 
       // Save to persistent storage
@@ -170,11 +143,10 @@ export default function EditGoalsScreen() {
     setDailyWaterGoalError(null);
     setDailyStepGoalError(null);
 
-    // Navigate back - in a real app we'd use navigation, but for now we'll just reset
-    // Note: Actual navigation would be handled by the calling screen
+    router.back();
   };
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <ScreenContainer title="Edit Goals">
         <ThemedText>Loading profile...</ThemedText>
@@ -192,10 +164,11 @@ export default function EditGoalsScreen() {
           <ThemedText type="smallBold">Goal Weight (kg)</ThemedText>
           <ThemedView type="backgroundSelected" style={{padding: Spacing.one, marginVertical: Spacing.two}}>
             <TextInput
-              placeholder={(profile?.goalWeightKg ?? 68).toString() + ' kg'}
+              placeholder={profile.goalWeightKg.toString() + ' kg'}
               value={goalWeightInput}
               onChangeText={handleGoalWeightChange}
-              style={{fontSize: 16}}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
               keyboardType="numeric"
             />
           </ThemedView>
@@ -209,10 +182,11 @@ export default function EditGoalsScreen() {
           <ThemedText type="smallBold">Daily Water Goal (L)</ThemedText>
           <ThemedView type="backgroundSelected" style={{padding: Spacing.one, marginVertical: Spacing.two}}>
             <TextInput
-              placeholder={(profile?.dailyWaterGoalL ?? 2.5).toString() + ' L'}
+              placeholder={profile.dailyWaterGoalL.toString() + ' L'}
               value={dailyWaterGoalInput}
               onChangeText={handleDailyWaterGoalChange}
-              style={{fontSize: 16}}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
               keyboardType="numeric"
             />
           </ThemedView>
@@ -226,10 +200,11 @@ export default function EditGoalsScreen() {
           <ThemedText type="smallBold">Daily Step Goal</ThemedText>
           <ThemedView type="backgroundSelected" style={{padding: Spacing.one, marginVertical: Spacing.two}}>
             <TextInput
-              placeholder={(profile?.dailyStepGoal ?? 8000).toString()}
+              placeholder={profile.dailyStepGoal.toString()}
               value={dailyStepGoalInput}
               onChangeText={handleDailyStepGoalChange}
-              style={{fontSize: 16}}
+              style={{fontSize: 16, color: theme.text}}
+              placeholderTextColor={theme.textSecondary}
               keyboardType="numeric"
             />
           </ThemedView>
@@ -259,6 +234,3 @@ export default function EditGoalsScreen() {
     </ScreenContainer>
   );
 }
-
-// We need to import TextInput here since it's used above
-import { TextInput } from 'react-native';

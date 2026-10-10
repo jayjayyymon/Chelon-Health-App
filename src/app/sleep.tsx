@@ -1,23 +1,36 @@
 import { useState } from 'react';
 import { InfoRow } from '@/components/info-row';
-import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
 import { TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { View } from 'react-native';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useHealthData } from '@/context/HealthDataContext';
 
+const getSleepDurationMinutes = (bedtime: Date | null, wakeTime: Date | null) => {
+  if (!bedtime || !wakeTime) return null;
+
+  const bedtimeMinutes = bedtime.getHours() * 60 + bedtime.getMinutes();
+  const wakeTimeMinutes = wakeTime.getHours() * 60 + wakeTime.getMinutes();
+  const duration = (wakeTimeMinutes - bedtimeMinutes + 24 * 60) % (24 * 60);
+
+  return duration > 0 ? duration : null;
+};
+
 export default function SleepScreen() {
   const { sleepHistory, addSleep } = useHealthData();
+  const theme = useTheme();
   const [bedtime, setBedtime] = useState<Date | null>(null);
   const [wakeTime, setWakeTime] = useState<Date | null>(null);
   const [showBedtimePicker, setShowBedtimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
-  const [sleepDuration, setSleepDuration] = useState<string | null>(null);
+  const durationMinutes = getSleepDurationMinutes(bedtime, wakeTime);
+  const sleepDuration = durationMinutes === null
+    ? null
+    : `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 ? ` ${durationMinutes % 60}m` : ''}`;
 
   // Get the most recent sleep entry for display
   const mostRecentSleep = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
@@ -34,8 +47,6 @@ export default function SleepScreen() {
     setShowBedtimePicker(false);
     if (selectedDate) {
       setBedtime(selectedDate);
-      // Recalculate duration when bedtime changes
-      calculateSleepDuration();
     }
   };
 
@@ -51,47 +62,6 @@ export default function SleepScreen() {
     setShowWakeTimePicker(false);
     if (selectedDate) {
       setWakeTime(selectedDate);
-      // Recalculate duration when wake time changes
-      calculateSleepDuration();
-    }
-  };
-
-  // Calculate sleep duration and set sleepDuration state
-  const calculateSleepDuration = () => {
-    try {
-      if (!bedtime || !wakeTime) {
-        setSleepDuration(null);
-        return;
-      }
-
-      // Calculate duration in milliseconds
-      let durationInMs = wakeTime.getTime() - bedtime.getTime();
-
-      // If wake time is earlier than bedtime, it means it crossed midnight
-      // Add 24 hours to get the correct positive duration
-      if (durationInMs < 0) {
-        durationInMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
-      }
-
-      // Handle zero or negative duration (invalid sleep period)
-      if (durationInMs <= 0) {
-        setSleepDuration(null);
-        return;
-      }
-
-      // Convert to hours and minutes
-      const durationInMinutes = Math.floor(durationInMs / (1000 * 60));
-      const hours = Math.floor(durationInMinutes / 60);
-      const minutes = durationInMinutes % 60;
-
-      // Format duration
-      const durationString = minutes > 0
-        ? `${hours}h ${minutes}m`
-        : `${hours}h`;
-
-      setSleepDuration(durationString);
-    } catch (error) {
-      setSleepDuration(null);
     }
   };
 
@@ -111,33 +81,12 @@ export default function SleepScreen() {
 
   // Handle saving sleep data
   const handleSaveSleep = () => {
-    if (!bedtime || !wakeTime) {
-      alert('Please enter both bedtime and wake time');
+    if (!bedtime || !wakeTime || durationMinutes === null) {
+      alert('Please choose a bedtime and wake time that are not the same.');
       return;
     }
 
-    if (!sleepDuration) {
-      alert('Please enter valid times');
-      return;
-    }
-
-    // Calculate duration in milliseconds
-    let durationInMs = wakeTime.getTime() - bedtime.getTime();
-
-    // If wake time is earlier than bedtime, it means it crossed midnight
-    // Add 24 hours to get the correct positive duration
-    if (durationInMs < 0) {
-      durationInMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
-    }
-
-    // Handle zero or negative duration (invalid sleep period)
-    if (durationInMs <= 0) {
-      alert('Please enter valid times');
-      return;
-    }
-
-    // Create sleep entry to save to context
-    const sleepHours = parseFloat((durationInMs / 3600000).toFixed(1));
+    const sleepHours = parseFloat((durationMinutes / 60).toFixed(1));
 
     const sleepEntry = {
       id: `sleep-${Date.now()}`,
@@ -146,6 +95,8 @@ export default function SleepScreen() {
         day: 'numeric',
       }),
       hours: sleepHours,
+      bedtime: formatTimeForDisplay(bedtime),
+      wakeTime: formatTimeForDisplay(wakeTime),
     };
 
     addSleep(sleepEntry);
@@ -153,7 +104,6 @@ export default function SleepScreen() {
     // Clear inputs after saving
     setBedtime(null);
     setWakeTime(null);
-    setSleepDuration(null);
 
     alert('Sleep data saved!');
   };
@@ -161,19 +111,20 @@ export default function SleepScreen() {
   return (
     <ScreenContainer subtitle={mostRecentSleep ? `Last night: ${mostRecentSleep.hours} hrs` : 'Enter your sleep times'}>
       <SectionCard title={mostRecentSleep ? mostRecentSleep.date : 'Last Night'}>
-        {mostRecentSleep ? (
-          <>
-            <InfoRow label="Duration" value={`${mostRecentSleep.hours} hrs`} />
-            <InfoRow label="Bedtime" value={bedtime ? formatTimeForDisplay(bedtime) : '--:-- --'} />
-            <InfoRow label="Wake" value={wakeTime ? formatTimeForDisplay(wakeTime) : '--:-- --'} />
-          </>
-        ) : (
-          <>
-            <InfoRow label="Duration" value={sleepDuration ? sleepDuration : '--'} />
-            <InfoRow label="Bedtime" value={bedtime ? formatTimeForDisplay(bedtime) : '--:-- --'} />
-            <InfoRow label="Wake" value={wakeTime ? formatTimeForDisplay(wakeTime) : '--:-- --'} />
-          </>
-        )}
+        <>
+          <InfoRow
+            label="Duration"
+            value={sleepDuration ?? (mostRecentSleep ? `${mostRecentSleep.hours} hrs` : '--')}
+          />
+          <InfoRow
+            label="Bedtime"
+            value={bedtime ? formatTimeForDisplay(bedtime) : mostRecentSleep?.bedtime ?? '--:-- --'}
+          />
+          <InfoRow
+            label="Wake"
+            value={wakeTime ? formatTimeForDisplay(wakeTime) : mostRecentSleep?.wakeTime ?? '--:-- --'}
+          />
+        </>
       </SectionCard>
 
       <SectionCard title="Log Your Sleep">
@@ -183,7 +134,7 @@ export default function SleepScreen() {
             onPress={showBedtimePickerHandler}
             style={{
               borderWidth: 1,
-              borderColor: 'border',
+              borderColor: theme.textSecondary,
               borderRadius: Spacing.one,
               paddingHorizontal: Spacing.two,
               paddingVertical: Spacing.one,
@@ -203,7 +154,7 @@ export default function SleepScreen() {
             onPress={showWakeTimePickerHandler}
             style={{
               borderWidth: 1,
-              borderColor: 'border',
+              borderColor: theme.textSecondary,
               borderRadius: Spacing.one,
               paddingHorizontal: Spacing.two,
               paddingVertical: Spacing.one,

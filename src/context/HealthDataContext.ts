@@ -17,6 +17,8 @@ export type SleepEntry = {
   id: string;
   date: string;
   hours: number;
+  bedtime?: string;
+  wakeTime?: string;
 };
 
 export type StepsEntry = {
@@ -91,6 +93,8 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
       id: 'sleep-actual',
       date: sleepLastNight.date,
       hours: sleepLastNight.hours,
+      bedtime: sleepLastNight.bedtime,
+      wakeTime: sleepLastNight.wakeTime,
     };
     return mockData;
   });

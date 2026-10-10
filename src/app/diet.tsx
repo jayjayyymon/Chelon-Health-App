@@ -2,7 +2,7 @@ import { InfoRow } from '@/components/info-row';
 import { ScreenContainer } from '@/components/screen-container';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { StyleSheet, TextInput, Button, View } from 'react-native';
+import { StyleSheet, TextInput, Button } from 'react-native';
 import { Spacing } from '@/constants/theme';
 import { useState } from 'react';
 import { useHealthData } from '@/context/HealthDataContext';
@@ -58,7 +58,7 @@ export default function DietScreen() {
 
       {dietMeals.length > 0 ? (
         dietMeals.map((meal) => (
-          <ThemedView type="backgroundElement" style={[styles.cardStyle]}>
+          <ThemedView key={meal.id} type="backgroundElement" style={[styles.cardStyle]}>
             <InfoRow label="Food Name" value={meal.name} />
             <InfoRow label="Calories" value={`${meal.calories} kcal`} />
             <Button

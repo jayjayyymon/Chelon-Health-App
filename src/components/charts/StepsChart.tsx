@@ -32,13 +32,12 @@ export const StepsChart: React.FC<StepsChartProps> = ({
   const steps = stepsData.map(d => d.steps);
   const minSteps = Math.min(...steps);
   const maxSteps = Math.max(...steps);
-  const range = maxSteps - minSteps;
   const adjustedMin = minSteps - 500; // Add padding
   const adjustedMax = maxSteps + 500;
   const adjustedRange = adjustedMax - adjustedMin;
 
   const scaleX = (index: number) =>
-    padding + (index / (stepsData.length - 1)) * chartWidth;
+    padding + (index / Math.max(stepsData.length - 1, 1)) * chartWidth;
 
   const scaleY = (steps: number) =>
     padding + chartHeight - ((steps - adjustedMin) / adjustedRange) * chartHeight;
