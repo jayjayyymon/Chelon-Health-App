@@ -102,6 +102,66 @@ export default function WellnessScreen() {
     setStep('form');
   };
 
+  // Generate wellness suggestions based on answers
+  const getSuggestions = (): string[] => {
+    const suggestions: string[] = [];
+    const moodVal = answers.mood;
+    const stressVal = answers.stress;
+    const energyVal = answers.energy;
+    const sleepVal = answers.sleep;
+
+    // Helper to add suggestion if not already similar
+    const addIfUnique = (text: string) => {
+      if (!suggestions.some(s => s.toLowerCase().includes(text.toLowerCase().slice(0, 20)))) {
+        suggestions.push(text);
+      }
+    };
+
+    // Mood-based suggestions
+    if (moodVal !== undefined) {
+      if (moodVal <= 2) {
+        addIfUnique('Try doing something you enjoy to lift your mood, like listening to music or talking to a friend.');
+      } else if (moodVal >= 4) {
+        addIfUnique('You\'re in a great mood! Keep doing what\'s working for you.');
+      }
+    }
+
+    // Stress-based suggestions
+    if (stressVal !== undefined) {
+      if (stressVal >= 4) {
+        addIfUnique('Consider taking short breaks to relax and practice deep breathing.');
+      } else if (stressVal <= 2) {
+        addIfUnique('Your stress levels are low. Notice what helps you stay calm and relaxed.');
+      }
+    }
+
+    // Energy-based suggestions
+    if (energyVal !== undefined) {
+      if (energyVal <= 2) {
+        addIfUnique('Stay hydrated and consider light activity like stretching to boost your energy.');
+      } else if (energyVal >= 4) {
+        addIfUnique('You have plenty of energy! Consider channeling it into activities you enjoy.');
+      }
+    }
+
+    // Sleep-based suggestions
+    if (sleepVal !== undefined) {
+      if (sleepVal <= 2) {
+        addIfUnique('Aim for a consistent sleep schedule and avoid screens before bedtime.');
+      } else if (sleepVal >= 4) {
+        addIfUnique('You\'re getting good sleep! Keep up your healthy bedtime routine.');
+      }
+    }
+
+    // If no specific suggestions (all medium or missing), add a general one
+    if (suggestions.length === 0) {
+      suggestions.push('Take a moment to appreciate how you\'re feeling right now.');
+    }
+
+    // Limit to 3 suggestions to avoid overwhelming
+    return suggestions.slice(0, 3);
+  };
+
   if (step === 'form') {
     return (
       <ScreenContainer subtitle="Reflect on your well-being with this quick check-in.">
@@ -160,10 +220,16 @@ export default function WellnessScreen() {
     );
   }
 
-  // Result step: show summary of answers
+  // Result step: show summary of answers with suggestions
   return (
-    <ScreenContainer subtitle="Here's your wellness summary.">
+    <ScreenContainer subtitle="Here's your wellness reflection.">
       <SectionCard title="Your Wellness Check-In">
+        {/* Friendly header */}
+        <ThemedText type="smallBold" style={styles.resultHeader}>
+          Thanks for checking in! Here's what you shared:
+        </ThemedText>
+
+        {/* Answers summary */}
         {questions.map((question) => (
           <View key={question.id} style={styles.summaryItem}>
             <ThemedText type="smallBold">{question.title}</ThemedText>
@@ -174,6 +240,22 @@ export default function WellnessScreen() {
             </ThemedText>
           </View>
         ))}
+
+        {/* Suggestions section */}
+        {getSuggestions().length > 0 && (
+          <View style={styles.suggestionsSection}>
+            <ThemedText type="smallBold" style={styles.suggestionsHeader}>
+              Friendly suggestions:
+            </ThemedText>
+            {getSuggestions().map((suggestion, index) => (
+              <ThemedText key={index} style={styles.suggestionText}>
+                • {suggestion}
+              </ThemedText>
+            ))}
+          </View>
+        )}
+
+        {/* Disclaimer */}
         <ThemedText themeColor="textSecondary" style={styles.disclaimer}>
           This check-in is for personal wellness reflection only. It is not a clinical assessment or substitute for professional care. If you are experiencing distress or thoughts of self-harm, please reach out to a trusted person or emergency services immediately.
         </ThemedText>
@@ -229,5 +311,20 @@ const styles = StyleSheet.create({
   },
   summaryItem: {
     marginVertical: Spacing.one,
+  },
+  resultHeader: {
+    marginTop: Spacing.two,
+    marginBottom: Spacing.one,
+    textAlign: 'center',
+  },
+  suggestionsSection: {
+    marginVertical: Spacing.two,
+  },
+  suggestionsHeader: {
+    marginBottom: Spacing.one,
+  },
+  suggestionText: {
+    marginLeft: Spacing.two,
+    marginBottom: Spacing.one,
   },
 });
