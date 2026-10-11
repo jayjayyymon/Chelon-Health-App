@@ -17,6 +17,7 @@ import { ThemedView } from '@/components/themed-view';
 import { NavigationColors, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 import { useAlert } from '@/hooks/use-alert';
+import { validateWaterGoal, validateWeight } from '@/utils/profileValidation';
 
 export default function EditGoalsScreen() {
   const { profile, loading, saveProfile: saveProfileToStorage } = useProfile();
@@ -54,8 +55,8 @@ export default function EditGoalsScreen() {
     const sleepMinutes = Number(sleepGoalMinutesInput.trim());
     const sleepTotalMinutes = sleepHours * 60 + sleepMinutes;
 
-    if (goalWeight !== '' && (!/^\d+(?:\.\d+)?$/.test(goalWeight) || Number(goalWeight) < 30 || Number(goalWeight) > 300)) nextErrors.goalWeight = 'Goal weight must be between 30 and 300 kg.';
-    if (waterGoal !== '' && (!/^\d+(?:\.\d+)?$/.test(waterGoal) || Number(waterGoal) <= 0)) nextErrors.water = 'Water goal must be greater than 0 L.';
+    if (goalWeight !== '' && validateWeight(goalWeight).error) nextErrors.goalWeight = validateWeight(goalWeight).error;
+    if (waterGoal !== '' && validateWaterGoal(waterGoal).error) nextErrors.water = validateWaterGoal(waterGoal).error;
     if (stepGoal !== '' && (!/^\d+$/.test(stepGoal) || Number(stepGoal) <= 0)) nextErrors.steps = 'Steps must be a positive whole number.';
     if (calorieGoal !== '' && (!/^\d+$/.test(calorieGoal) || Number(calorieGoal) < 1 || Number(calorieGoal) > 10000)) nextErrors.calories = 'Calories must be between 1 and 10,000 kcal.';
     if (!/^\d+$/.test(sleepGoalHoursInput.trim()) || !/^\d+$/.test(sleepGoalMinutesInput.trim()) || sleepMinutes > 59 || sleepTotalMinutes <= 0 || sleepTotalMinutes > 24 * 60) nextErrors.sleep = 'Sleep must be 1–24 hours, with minutes from 0–59.';
@@ -141,10 +142,10 @@ export default function EditGoalsScreen() {
               </View>
 
               <View style={styles.actions}>
-                <Pressable accessibilityRole="button" onPress={() => router.back()} style={[styles.actionButton, styles.cancelButton, { borderColor, backgroundColor: cardColor }]}>
+                <Pressable accessibilityLabel="Cancel goal edits" accessibilityRole="button" onPress={() => router.back()} style={[styles.actionButton, styles.cancelButton, { borderColor, backgroundColor: cardColor }]}>
                   <ThemedText style={[styles.actionText, { color: inkColor }]}>CANCEL</ThemedText>
                 </Pressable>
-                <Pressable accessibilityRole="button" disabled={isSaving} onPress={handleSave} style={[styles.actionButton, { backgroundColor: panelGreen, opacity: isSaving ? 0.6 : 1 }]}>
+                <Pressable accessibilityLabel={isSaving ? 'Saving goals' : 'Save goals'} accessibilityRole="button" accessibilityState={{ disabled: isSaving }} disabled={isSaving} onPress={handleSave} style={[styles.actionButton, { backgroundColor: panelGreen, opacity: isSaving ? 0.6 : 1 }]}>
                   <ThemedText style={[styles.actionText, { color: '#ffffff' }]}>{isSaving ? 'SAVING…' : 'SAVE GOALS'}</ThemedText>
                 </Pressable>
               </View>
@@ -175,7 +176,7 @@ function GoalField({ label, unit, value, placeholder, error, keyboardType, onCha
     <View style={[styles.fieldGroup, compact && styles.compactField]}>
       <ThemedText style={[styles.fieldLabel, { color: colors.mutedInk }]}>{label}{unit ? ` (${unit})` : ''}</ThemedText>
       <View style={[styles.inputWrap, { backgroundColor: colors.fieldColor, borderColor: error ? colors.errorColor : colors.borderColor }]}>
-        <TextInput keyboardType={keyboardType} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.mutedInk} style={[styles.input, { color: colors.inkColor }]} value={value} />
+        <TextInput accessibilityLabel={label} keyboardType={keyboardType} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.mutedInk} style={[styles.input, { color: colors.inkColor }]} value={value} />
         {unit ? <ThemedText style={[styles.unit, { color: colors.mutedInk }]}>{unit}</ThemedText> : null}
       </View>
       {error ? <ThemedText style={[styles.error, { color: colors.errorColor }]}>{error}</ThemedText> : null}

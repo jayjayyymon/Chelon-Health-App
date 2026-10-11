@@ -243,7 +243,13 @@ export default function HealthCentersScreen() {
               </View>
             ) : null}
             {/* Floating button for current location */}
-            <Pressable onPress={getCurrentLocation} style={styles.locationButton}>
+            <Pressable
+              accessibilityLabel={loading ? 'Getting your location' : 'Use my location'}
+              accessibilityRole="button"
+              accessibilityState={{ busy: loading, disabled: loading }}
+              disabled={loading}
+              onPress={getCurrentLocation}
+              style={styles.locationButton}>
               <ActivityIndicator size={loading ? 20 : 16} color={loading ? theme.textSecondary : theme.text} style={{ marginRight: 8 }} />
               <ThemedText type="smallBold" style={{ marginLeft: 0 }}>
                 {loading ? 'Getting...' : 'My Location'}
@@ -253,6 +259,9 @@ export default function HealthCentersScreen() {
         )}
       </View>
 
+      <ThemedText type="small" themeColor="textSecondary" accessibilityRole="text">
+        Example locations for demonstration only. Verify provider details before visiting.
+      </ThemedText>
       <View style={[styles.selectedFacilityContainer, { backgroundColor: theme.backgroundElement, borderRadius: Spacing.two }]}>
           <View style={styles.facilityNameContainer}>
             <View style={styles.facilityNameIcon}>
@@ -298,8 +307,28 @@ export default function HealthCentersScreen() {
           </View>
       </View>
 
-
-
+      <View accessible accessibilityLabel="Available health centers" style={styles.facilityList}>
+        <ThemedText type="smallBold">Available health centers</ThemedText>
+        {healthCenters.map(center => (
+          <Pressable
+            key={center.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${center.name}`}
+            accessibilityState={{ selected: center.id === selectedCenterId }}
+            onPress={() => setSelectedCenterId(center.id)}
+            style={({ pressed }) => [
+              styles.facilityRow,
+              { backgroundColor: center.id === selectedCenterId ? theme.backgroundSelected : theme.backgroundElement },
+              pressed && styles.pressed,
+            ]}>
+            <View style={styles.facilityRowContent}>
+              <ThemedText type="smallBold">{center.name}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{center.type}</ThemedText>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">{center.distance}</ThemedText>
+          </Pressable>
+        ))}
+      </View>
     </ScreenContainer>
   );
 }

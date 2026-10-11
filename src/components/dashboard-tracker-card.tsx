@@ -16,7 +16,10 @@ type DashboardTrackerCardProps = {
 export function DashboardTrackerCard({ href, title, icon, color }: DashboardTrackerCardProps) {
   return (
     <Link href={href} asChild>
-      <Pressable style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${title} tracker`}
+        style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
         <View style={[styles.card, { backgroundColor: color }]}>
           <View style={styles.ripples} pointerEvents="none">
             <View style={[styles.ripple, styles.rippleOuter]} />

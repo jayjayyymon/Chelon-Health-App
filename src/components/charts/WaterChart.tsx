@@ -4,6 +4,7 @@ import { Rect as SvgRect, Svg, Text as SvgText } from 'react-native-svg';
 
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 type WaterChartProps = {
   width?: number;
@@ -24,13 +25,15 @@ export const WaterChart: React.FC<WaterChartProps> = ({
 }) => {
   const { waterGlasses } = useHealthData();
   const { profile } = useProfile();
+  const todayKey = getLocalDateKey();
+  const todayGlasses = waterGlasses.filter(glass => (glass.dateKey ?? todayKey) === todayKey);
   const safeWidth = Math.max(180, width);
   const safeHeight = Math.max(120, height);
   const padding = Math.min(24, Math.max(16, Math.floor(Math.min(safeWidth, safeHeight) / 6)));
   const chartWidth = Math.max(1, safeWidth - padding * 2);
   const chartHeight = Math.max(1, safeHeight - padding * 2);
 
-  if (waterGlasses.length === 0) {
+  if (todayGlasses.length === 0) {
     return (
       <View style={[styles.container, { width: safeWidth, height: safeHeight }]}>
         <Text style={[styles.noData, { color: textColor }]}>No water data yet</Text>
@@ -38,10 +41,10 @@ export const WaterChart: React.FC<WaterChartProps> = ({
     );
   }
 
-  const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
+  const totalMl = todayGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const goalMl = Math.max(profile.dailyWaterGoalL * 1000, 1);
-  const maxScale = Math.max(goalMl, ...waterGlasses.map(glass => glass.amountMl));
-  const slotWidth = chartWidth / waterGlasses.length;
+  const maxScale = Math.max(goalMl, ...todayGlasses.map(glass => glass.amountMl));
+  const slotWidth = chartWidth / todayGlasses.length;
   const barWidth = Math.max(14, Math.min(38, slotWidth * 0.58));
   const totalL = totalMl / 1000;
 
@@ -50,7 +53,7 @@ export const WaterChart: React.FC<WaterChartProps> = ({
       {showLabel ? <Text style={[styles.chartTitle, { color: textColor }]}>Water intake</Text> : null}
       <Svg width={safeWidth} height={safeHeight}>
         <SvgRect x={padding} y={padding + chartHeight - 1} width={chartWidth} height={1} fill={textColor} opacity={0.35} />
-        {waterGlasses.map((glass, index) => {
+        {todayGlasses.map((glass, index) => {
           const barHeight = Math.max(4, (glass.amountMl / maxScale) * chartHeight);
           const x = padding + index * slotWidth + (slotWidth - barWidth) / 2;
           const y = padding + chartHeight - barHeight;

@@ -11,6 +11,14 @@ type ProfileContextType = {
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
+let profileOperationQueue = Promise.resolve();
+
+const enqueueProfileOperation = <T,>(operation: () => Promise<T>): Promise<T> => {
+  const result = profileOperationQueue.then(operation);
+  profileOperationQueue = result.then(() => undefined, () => undefined);
+  return result;
+};
+
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile>(getDefaultProfile);
   const [loading, setLoading] = useState(true);
@@ -29,18 +37,18 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     setProfile(current => ({ ...current, ...updates }));
   };
 
-  const saveSharedProfile = async (profileToSave: UserProfile) => {
+  const saveSharedProfile = (profileToSave: UserProfile) => enqueueProfileOperation(async () => {
     try {
       await saveProfile(profileToSave);
-      setProfile(profileToSave);
+      setProfile(current => ({ ...current, ...profileToSave }));
       return true;
     } catch (error) {
       console.error('Error saving profile:', error);
       return false;
     }
-  };
+  });
 
-  const resetSharedProfile = async () => {
+  const resetSharedProfile = () => enqueueProfileOperation(async () => {
     try {
       await clearProfileData();
       setProfile(getDefaultProfile());
@@ -49,7 +57,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error clearing profile data:', error);
       return false;
     }
-  };
+  });
 
   return React.createElement(
     ProfileContext.Provider,

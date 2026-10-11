@@ -213,6 +213,9 @@ export default function WellnessScreen() {
               {currentQuestion.options.map((option) => (
                 <Pressable
                   key={option.value}
+                  accessibilityLabel={option.label}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: answers[currentQuestion.id] === option.value }}
                   onPress={() => handleAnswerChange(option.value)}
                 >
                   <ThemedView

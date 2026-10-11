@@ -11,8 +11,11 @@ export const getLocalDateKey = (date = new Date()): string => {
   return `${year}-${month}-${day}`;
 };
 
-const isValidDateKey = (value: unknown): value is string =>
-  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+const isValidDateKey = (value: unknown): value is string => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00`);
+  return !Number.isNaN(date.getTime()) && getLocalDateKey(date) === value;
+};
 
 const normalizeMeal = (value: unknown): DietMeal | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;

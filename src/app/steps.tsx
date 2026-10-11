@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,6 +13,7 @@ import {
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 const accentGreen = NavigationColors.background;
 
@@ -23,19 +23,16 @@ export default function StepsScreen() {
   const theme = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { width: screenWidth } = useWindowDimensions();
-  const { stepsHistory, setStepsHistory } = useHealthData();
+  const { stepsHistory, addSteps } = useHealthData();
   const { profile } = useProfile();
-
-  const latestSteps = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
+  const todayKey = getLocalDateKey();
+  const latestSteps = stepsHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
   const todaySteps = latestSteps?.steps ?? 0;
   const goalSteps = profile.dailyStepGoal;
   const progress = goalSteps > 0 ? Math.min(Math.round((todaySteps / goalSteps) * 100), 100) : 0;
   const calories = Math.round(todaySteps * 0.22);
   const distanceKm = todaySteps * 0.000762;
-  const currentDate = useMemo(
-    () => new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
-    [],
-  );
+  const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
   const contentWidth = Math.min(
     Math.max(screenWidth - Spacing.three * 2, 280),
     Math.min(MaxContentWidth, 520),
@@ -49,18 +46,17 @@ export default function StepsScreen() {
   const borderColor = isDark ? '#397258' : '#D9E7DC';
   const chartWidth = Math.max(180, Math.min(480, contentWidth - Spacing.three * 2));
 
-  const canAddSteps = stepsHistory.length > 0 && todaySteps < goalSteps;
+  const canAddSteps = todaySteps < goalSteps;
 
-  const addSteps = () => {
+  const handleAddSteps = () => {
     if (!canAddSteps) return;
 
-    const newSteps = Math.min(goalSteps, Math.max(0, todaySteps + 500));
-    const updatedHistory = [...stepsHistory];
-    updatedHistory[updatedHistory.length - 1] = {
-      ...updatedHistory[updatedHistory.length - 1],
-      steps: newSteps,
-    };
-    setStepsHistory(updatedHistory);
+    addSteps({
+      id: latestSteps?.id ?? `steps-${todayKey}`,
+      date: todayKey,
+      dateKey: todayKey,
+      steps: Math.min(goalSteps, Math.max(0, todaySteps + 500)),
+    });
   };
 
   return (
@@ -83,6 +79,7 @@ export default function StepsScreen() {
 
             <View style={styles.heading}>
               <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
+              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S STEPS</ThemedText>
             </View>
 
             <TrackerMascot
@@ -134,7 +131,7 @@ export default function StepsScreen() {
                 disabled={!canAddSteps}
                 icon="＋"
                 label={canAddSteps ? 'ADD STEP' : 'GOAL REACHED'}
-                onPress={addSteps}
+                onPress={handleAddSteps}
               />
             </View>
 

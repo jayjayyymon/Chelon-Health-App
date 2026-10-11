@@ -305,7 +305,8 @@ export default function SettingsScreen() {
           <View key={section.id} style={accordionItemStyle}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${section.title}, ${expandedSection === section.id ? 'expanded' : 'collapsed'}`}
+              accessibilityLabel={section.title}
+              accessibilityState={{ expanded: expandedSection === section.id }}
               onPress={() => {
                 setExpandedSection(expandedSection === section.id ? null : section.id);
               }}

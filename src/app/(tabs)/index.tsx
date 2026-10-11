@@ -34,12 +34,14 @@ export default function DashboardScreen() {
   const scheme = useColorScheme();
   const dashboardColors = DashboardColors[scheme === 'dark' ? 'dark' : 'light'];
 
-  const latestWeightEntry = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
-  const latestSleepEntry = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
-  const latestStepsEntry = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
-  const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
-  const totalL = totalMl / 1000;
   const todayKey = getLocalDateKey();
+  const latestWeightEntry = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
+  const latestSleepEntry = sleepHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
+  const latestStepsEntry = stepsHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
+  const totalMl = waterGlasses
+    .filter(glass => (glass.dateKey ?? todayKey) === todayKey)
+    .reduce((sum, glass) => sum + glass.amountMl, 0);
+  const totalL = totalMl / 1000;
   const todayMeals = dietMeals.filter(meal => (meal.dateKey ?? todayKey) === todayKey);
   const totalCalories = todayMeals.reduce((sum, meal) => sum + meal.calories, 0);
 
@@ -84,7 +86,7 @@ export default function DashboardScreen() {
     };
   });
 
-  const orderedTrackers = ['/water', '/sleep', '/weight', '/steps', '/diet'];
+  const orderedTrackers = ['/water', '/sleep', '/weight', '/steps', '/diet', '/wellness'];
   const orderedShortcuts = orderedTrackers
     .map((href) => dynamicTrackerShortcuts.find((item) => item.href === href))
     .filter((item) => item !== undefined);
@@ -137,7 +139,6 @@ export default function DashboardScreen() {
                       />
                     </View>
                   ))}
-                  {rowIndex === 2 && <View style={styles.trackerCell} />}
                 </View>
               ))}
             </View>

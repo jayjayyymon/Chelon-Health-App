@@ -63,7 +63,10 @@ export default function ProfileScreen() {
     setAppointmentsLoading(true);
     try {
       const savedAppointments = await getAppointments();
-      const sorted = [...savedAppointments].sort((a, b) => a.timestamp - b.timestamp);
+      const now = Date.now();
+      const sorted = savedAppointments
+        .filter(appointment => appointment.scheduledAt && new Date(appointment.scheduledAt).getTime() > now)
+        .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
       setAppointments(sorted);
     } catch (error) {
       console.error('Failed to load appointments:', error);
@@ -79,15 +82,18 @@ export default function ProfileScreen() {
     }, [loadAppointments]),
   );
 
+  const todayKey = getLocalDateKey();
   const latestWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
-  const latestSleep = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
-  const latestSteps = stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
+  const latestSleep = sleepHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
+  const latestSteps = stepsHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
   const todayMeals = useMemo(() => {
     const todayKey = getLocalDateKey();
     return dietMeals.filter(meal => (meal.dateKey ?? todayKey) === todayKey);
   }, [dietMeals]);
   const totalCalories = todayMeals.reduce((total, meal) => total + meal.calories, 0);
-  const totalWaterL = waterGlasses.reduce((total, glass) => total + glass.amountMl, 0) / 1000;
+  const totalWaterL = waterGlasses
+    .filter(glass => (glass.dateKey ?? todayKey) === todayKey)
+    .reduce((total, glass) => total + glass.amountMl, 0) / 1000;
 
   const panelGreen = isDark ? '#245c42' : NavigationColors.background;
   const summaryGreen = isDark ? '#1b4633' : '#c4e8bf';

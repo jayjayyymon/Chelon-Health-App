@@ -68,6 +68,35 @@ export const getDefaultProfile = (): UserProfile => ({
   wellnessStatus: 'Okay',
 });
 
+const isInRange = (value: unknown, minimum: number, maximum: number): value is number => (
+  typeof value === 'number'
+  && Number.isFinite(value)
+  && value >= minimum
+  && value <= maximum
+);
+
+const normalizeProfile = (value: Partial<UserProfile>): UserProfile => {
+  const defaults = getDefaultProfile();
+  return {
+    ...defaults,
+    name: typeof value.name === 'string' && value.name.trim() ? value.name.trim() : defaults.name,
+    age: isInRange(value.age, 13, 120) ? Math.round(value.age) : defaults.age,
+    heightCm: isInRange(value.heightCm, 100, 250) ? Math.round(value.heightCm) : defaults.heightCm,
+    goalWeightKg: isInRange(value.goalWeightKg, 30, 300) ? value.goalWeightKg : defaults.goalWeightKg,
+    dailyWaterGoalL: isInRange(value.dailyWaterGoalL, 0.5, 10) ? value.dailyWaterGoalL : defaults.dailyWaterGoalL,
+    dailyStepGoal: isInRange(value.dailyStepGoal, 1, 100000) ? Math.round(value.dailyStepGoal) : defaults.dailyStepGoal,
+    dailySleepGoalHours: isInRange(value.dailySleepGoalHours, 1, 24)
+      ? value.dailySleepGoalHours
+      : defaults.dailySleepGoalHours,
+    dailyCalorieGoal: isInRange(value.dailyCalorieGoal, 1, 10000) && Number.isInteger(value.dailyCalorieGoal)
+      ? value.dailyCalorieGoal
+      : defaults.dailyCalorieGoal,
+    wellnessStatus: typeof value.wellnessStatus === 'string' ? value.wellnessStatus : defaults.wellnessStatus,
+    gender: isGender(value.gender) ? value.gender : undefined,
+    primaryHealthGoal: isPrimaryHealthGoal(value.primaryHealthGoal) ? value.primaryHealthGoal : undefined,
+  };
+};
+
 /** Load and normalize the shared user profile from local storage. */
 export const loadProfile = async (): Promise<UserProfile> => {
   try {
@@ -75,42 +104,7 @@ export const loadProfile = async (): Promise<UserProfile> => {
     if (profileJson !== null) {
       const parsed = JSON.parse(profileJson) as Partial<UserProfile> | null;
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        const defaults = getDefaultProfile();
-        return {
-          ...defaults,
-          ...parsed,
-          name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name : defaults.name,
-          age: typeof parsed.age === 'number' && Number.isFinite(parsed.age) ? parsed.age : defaults.age,
-          heightCm: typeof parsed.heightCm === 'number' && Number.isFinite(parsed.heightCm)
-            ? parsed.heightCm
-            : defaults.heightCm,
-          goalWeightKg: typeof parsed.goalWeightKg === 'number' && Number.isFinite(parsed.goalWeightKg)
-            ? parsed.goalWeightKg
-            : defaults.goalWeightKg,
-          dailyWaterGoalL: typeof parsed.dailyWaterGoalL === 'number' && Number.isFinite(parsed.dailyWaterGoalL)
-            ? parsed.dailyWaterGoalL
-            : defaults.dailyWaterGoalL,
-          dailyStepGoal: typeof parsed.dailyStepGoal === 'number' && Number.isFinite(parsed.dailyStepGoal)
-            ? parsed.dailyStepGoal
-            : defaults.dailyStepGoal,
-          dailySleepGoalHours: typeof parsed.dailySleepGoalHours === 'number'
-            && Number.isFinite(parsed.dailySleepGoalHours)
-            && parsed.dailySleepGoalHours > 0
-            && parsed.dailySleepGoalHours <= 24
-            ? parsed.dailySleepGoalHours
-            : defaults.dailySleepGoalHours,
-          dailyCalorieGoal: typeof parsed.dailyCalorieGoal === 'number'
-            && Number.isInteger(parsed.dailyCalorieGoal)
-            && parsed.dailyCalorieGoal > 0
-            && parsed.dailyCalorieGoal <= 10000
-            ? parsed.dailyCalorieGoal
-            : defaults.dailyCalorieGoal,
-          wellnessStatus: typeof parsed.wellnessStatus === 'string'
-            ? parsed.wellnessStatus
-            : defaults.wellnessStatus,
-          gender: isGender(parsed.gender) ? parsed.gender : undefined,
-          primaryHealthGoal: isPrimaryHealthGoal(parsed.primaryHealthGoal) ? parsed.primaryHealthGoal : undefined,
-        };
+        return normalizeProfile(parsed);
       }
     }
     return getDefaultProfile();
@@ -123,7 +117,7 @@ export const loadProfile = async (): Promise<UserProfile> => {
 /** Save the shared user profile to local storage. */
 export const saveProfile = async (profile: UserProfile): Promise<void> => {
   try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeProfile(profile)));
   } catch (error) {
     console.error('Failed to save profile:', error);
     throw error;

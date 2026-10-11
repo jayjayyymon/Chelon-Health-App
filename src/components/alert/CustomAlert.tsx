@@ -117,10 +117,14 @@ export function CustomAlert({
     <Modal
       transparent={true}
       visible={visible}
-      onRequestClose={onRequestClose}
+      onRequestClose={isLoading ? () => undefined : onRequestClose}
+      accessibilityViewIsModal
       animationType="fade"
     >
-      <TouchableWithoutFeedback onPress={onRequestClose}>
+      <TouchableWithoutFeedback
+        onPress={isLoading || type === 'confirmation' || type === 'destructiveConfirmation'
+          ? undefined
+          : onRequestClose}>
         <View style={styles.backdrop}>
           <View style={[styles.container, { backgroundColor: background, borderColor: border }]}>
             {/* Icon */}

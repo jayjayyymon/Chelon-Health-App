@@ -2,6 +2,14 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, Dispa
 import { waterSummary, sleepLastNight, stepsToday, dietMeals } from '@/data/mock-data';
 import { loadWeightHistory, saveWeightHistory } from '@/utils/weightStorage';
 import { getLocalDateKey, loadDietMeals, saveDietMeals } from '@/utils/dietStorage';
+import {
+  loadSleepHistory,
+  loadStepsHistory,
+  loadWaterGlasses,
+  saveSleepHistory,
+  saveStepsHistory,
+  saveWaterGlasses,
+} from '@/utils/healthDataStorage';
 
 export type WeightEntry = {
   id: string;
@@ -13,11 +21,13 @@ export type WaterGlass = {
   id: string;
   time: string;
   amountMl: number;
+  dateKey?: string;
 };
 
 export type SleepEntry = {
   id: string;
   date: string;
+  dateKey?: string;
   hours: number;
   bedtime?: string;
   wakeTime?: string;
@@ -26,6 +36,7 @@ export type SleepEntry = {
 export type StepsEntry = {
   id: string;
   date: string;
+  dateKey?: string;
   steps: number;
 };
 
@@ -39,6 +50,7 @@ export type DietMeal = {
 };
 
 export type HealthDataContextType = {
+  loading: boolean;
   weightHistory: WeightEntry[];
   setWeightHistory: Dispatch<SetStateAction<WeightEntry[]>>;
   addWeight: (entry: WeightEntry) => void;
@@ -68,41 +80,74 @@ export const useHealthData = () => {
   return context;
 };
 
+const seedWaterGlasses = (): WaterGlass[] => waterSummary.glasses.map(glass => ({
+  ...glass,
+  dateKey: getLocalDateKey(),
+}));
+
+const seedSleepHistory = (): SleepEntry[] => {
+  const today = new Date();
+  const hours = [6.8, 7.4, 6.5, 7.1, 7.8, 6.9, sleepLastNight.hours];
+  return hours.map((value, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (hours.length - 1 - index));
+    const dateKey = getLocalDateKey(date);
+    return {
+      id: `sleep-seed-${dateKey}`,
+      date: dateKey,
+      dateKey,
+      hours: value,
+      ...(index === hours.length - 1
+        ? { bedtime: sleepLastNight.bedtime, wakeTime: sleepLastNight.wakeTime }
+        : {}),
+    };
+  });
+};
+
+const seedStepsHistory = (): StepsEntry[] => {
+  const today = new Date();
+  const steps = [4200, 5100, 3800, 6240, 4700, 5600, stepsToday.count];
+  return steps.map((value, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (steps.length - 1 - index));
+    const dateKey = getLocalDateKey(date);
+    return {
+      id: `steps-seed-${dateKey}`,
+      date: dateKey,
+      dateKey,
+      steps: Math.max(0, value),
+    };
+  });
+};
+
 export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
+  const [loading, setLoading] = useState(true);
   const [weightHistoryState, setWeightHistoryState] = useState<WeightEntry[]>([]);
-  const [weightHistoryHydrated, setWeightHistoryHydrated] = useState(false);
-  const [waterGlassesState, setWaterGlassesState] = useState<WaterGlass[]>(waterSummary.glasses);
-
-  useEffect(() => {
-    let active = true;
-
-    loadWeightHistory().then(storedHistory => {
-      if (!active) return;
-      const hydratedHistory = storedHistory ?? [];
-      setWeightHistoryState(hydratedHistory);
-      setWeightHistoryHydrated(true);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!weightHistoryHydrated) return;
-    void saveWeightHistory(weightHistoryState);
-  }, [weightHistoryHydrated, weightHistoryState]);
-
+  const [waterGlassesState, setWaterGlassesState] = useState<WaterGlass[]>(seedWaterGlasses);
+  const [sleepHistoryState, setSleepHistoryState] = useState<SleepEntry[]>(seedSleepHistory);
+  const [stepsHistoryState, setStepsHistoryState] = useState<StepsEntry[]>(seedStepsHistory);
   const [dietMealsState, setDietMealsState] = useState<DietMeal[]>(dietMeals);
-  const [dietMealsHydrated, setDietMealsHydrated] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    loadDietMeals().then(storedMeals => {
+    Promise.all([
+      loadWeightHistory(),
+      loadDietMeals(),
+      loadWaterGlasses(),
+      loadSleepHistory(),
+      loadStepsHistory(),
+    ]).then(([storedWeight, storedDiet, storedWater, storedSleep, storedSteps]) => {
       if (!active) return;
-      if (storedMeals !== null) setDietMealsState(storedMeals);
-      setDietMealsHydrated(true);
+      if (storedWeight !== null) setWeightHistoryState(storedWeight);
+      if (storedDiet !== null) setDietMealsState(storedDiet);
+      if (storedWater !== null) setWaterGlassesState(storedWater);
+      if (storedSleep !== null) setSleepHistoryState(storedSleep);
+      if (storedSteps !== null) setStepsHistoryState(storedSteps);
+      setLoading(false);
+    }).catch(error => {
+      console.error('Failed to hydrate health data:', error);
+      if (active) setLoading(false);
     });
 
     return () => {
@@ -111,90 +156,52 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (dietMealsHydrated) {
-      void saveDietMeals(dietMealsState);
-    }
-  }, [dietMealsHydrated, dietMealsState]);
+    if (!loading) void saveWeightHistory(weightHistoryState);
+  }, [loading, weightHistoryState]);
 
-  const generateMockSleepData = (): SleepEntry[] => {
-    const baseDate = new Date(sleepLastNight.date);
-    const baseHours = sleepLastNight.hours;
-    const mockData: SleepEntry[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(baseDate);
-      date.setDate(baseDate.getDate() - i);
-      const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const hours = baseHours + (Math.random() - 0.5) * 2;
-      mockData.push({
-        id: `sleep-${i}`,
-        date: dateString,
-        hours: parseFloat(hours.toFixed(1)),
-      });
-    }
-    return mockData.reverse();
-  };
+  useEffect(() => {
+    if (!loading) void saveDietMeals(dietMealsState);
+  }, [loading, dietMealsState]);
 
-  const [sleepHistoryState, setSleepHistoryState] = useState<SleepEntry[]>(() => {
-    const mockData = generateMockSleepData();
-    const actualIndex = mockData.length - 1;
-    mockData[actualIndex] = {
-      id: 'sleep-actual',
-      date: sleepLastNight.date,
-      hours: sleepLastNight.hours,
-      bedtime: sleepLastNight.bedtime,
-      wakeTime: sleepLastNight.wakeTime,
-    };
-    return mockData;
-  });
+  useEffect(() => {
+    if (!loading) void saveWaterGlasses(waterGlassesState);
+  }, [loading, waterGlassesState]);
 
-  const generateMockStepsData = (): StepsEntry[] => {
-    const baseDate = new Date();
-    const baseSteps = stepsToday.count;
-    const mockData: StepsEntry[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(baseDate);
-      date.setDate(baseDate.getDate() - i);
-      const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const steps = baseSteps + Math.floor((Math.random() - 0.5) * 2000);
-      mockData.push({
-        id: `steps-${i}`,
-        date: dateString,
-        steps: Math.max(steps, 1000),
-      });
-    }
-    return mockData.reverse();
-  };
+  useEffect(() => {
+    if (!loading) void saveSleepHistory(sleepHistoryState);
+  }, [loading, sleepHistoryState]);
 
-  const [stepsHistoryState, setStepsHistoryState] = useState<StepsEntry[]>(() => {
-    const mockData = generateMockStepsData();
-    const actualIndex = mockData.length - 1;
-    mockData[actualIndex] = {
-      id: 'steps-actual',
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      steps: stepsToday.count,
-    };
-    return mockData;
-  });
+  useEffect(() => {
+    if (!loading) void saveStepsHistory(stepsHistoryState);
+  }, [loading, stepsHistoryState]);
 
   const addWeight = (entry: WeightEntry) => {
     setWeightHistoryState(prev => [...prev, entry]);
   };
 
   const addWaterGlass = (glass: WaterGlass) => {
-    setWaterGlassesState(prev => [...prev, glass]);
+    setWaterGlassesState(prev => [...prev, { ...glass, dateKey: glass.dateKey ?? getLocalDateKey() }]);
   };
 
   const addSleep = (entry: SleepEntry) => {
+    const dateKey = entry.dateKey ?? getLocalDateKey();
     setSleepHistoryState(prev => {
-      const updated = [...prev, entry];
-      return updated.slice(-7);
+      const updated = [
+        ...prev.filter(item => (item.dateKey ?? item.date) !== dateKey),
+        { ...entry, date: dateKey, dateKey },
+      ];
+      return updated.sort((a, b) => (a.dateKey ?? a.date).localeCompare(b.dateKey ?? b.date)).slice(-7);
     });
   };
 
   const addSteps = (entry: StepsEntry) => {
+    const dateKey = entry.dateKey ?? getLocalDateKey();
     setStepsHistoryState(prev => {
-      const updated = [...prev, entry];
-      return updated.slice(-7);
+      const updated = [
+        ...prev.filter(item => (item.dateKey ?? item.date) !== dateKey),
+        { ...entry, date: dateKey, dateKey, steps: Math.max(0, Math.floor(entry.steps)) },
+      ];
+      return updated.sort((a, b) => (a.dateKey ?? a.date).localeCompare(b.dateKey ?? b.date)).slice(-7);
     });
   };
 
@@ -223,25 +230,26 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
     HealthDataContext.Provider,
     {
       value: {
+        loading,
         weightHistory: weightHistoryState,
         setWeightHistory: setWeightHistoryState,
-        addWeight: addWeight,
+        addWeight,
         waterGlasses: waterGlassesState,
         setWaterGlasses: setWaterGlassesState,
-        addWaterGlass: addWaterGlass,
+        addWaterGlass,
         sleepHistory: sleepHistoryState,
         setSleepHistory: setSleepHistoryState,
-        addSleep: addSleep,
+        addSleep,
         stepsHistory: stepsHistoryState,
         setStepsHistory: setStepsHistoryState,
-        addSteps: addSteps,
+        addSteps,
         dietMeals: dietMealsState,
         setDietMeals: setDietMealsState,
-        addDietMeal: addDietMeal,
-        updateDietMeal: updateDietMeal,
-        removeDietMeal: removeDietMeal,
-      }
+        addDietMeal,
+        updateDietMeal,
+        removeDietMeal,
+      },
     },
-    children
+    children,
   );
 };

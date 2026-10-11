@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import {
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 const glassAmountMl = 250;
 const accentGreen = NavigationColors.background;
@@ -30,18 +30,17 @@ export default function WaterScreen() {
   const isDark = colorScheme === 'dark';
   const { waterGlasses, setWaterGlasses } = useHealthData();
   const { profile } = useProfile();
+  const todayKey = getLocalDateKey();
+  const todayGlasses = waterGlasses.filter(glass => (glass.dateKey ?? todayKey) === todayKey);
 
-  const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
+  const totalMl = todayGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
   const todayL = totalMl / 1000;
   const goalL = profile.dailyWaterGoalL;
   const goalMl = Math.round(goalL * 1000);
   const progress = goalMl > 0 ? Math.min(100, Math.max(0, (totalMl / goalMl) * 100)) : 0;
   const canAddGlass = totalMl < goalMl;
-  const currentDate = useMemo(
-    () => new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
-    [],
-  );
-  const recentGlasses = waterGlasses.slice(-3).reverse();
+  const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  const recentGlasses = todayGlasses.slice(-3).reverse();
   const heroTint = isDark ? '#183b2d' : '#c9e8ca';
   const panelGreen = isDark ? '#245c42' : accentGreen;
   const panelText = '#ffffff';
@@ -62,15 +61,20 @@ export default function WaterScreen() {
           id: `${Date.now()}-${Math.random()}`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           amountMl: Math.min(glassAmountMl, remainingMl),
+          dateKey: todayKey,
         },
       ];
     });
   };
 
   const removeGlass = () => {
-    if (waterGlasses.length > 0) {
-      setWaterGlasses(prev => prev.slice(0, -1));
-    }
+    setWaterGlasses(prev => {
+      const currentDayIds = new Set(
+        prev.filter(glass => (glass.dateKey ?? todayKey) === todayKey).map(glass => glass.id),
+      );
+      const lastCurrentDayId = [...currentDayIds].pop();
+      return lastCurrentDayId ? prev.filter(glass => glass.id !== lastCurrentDayId) : prev;
+    });
   };
 
   return (
@@ -86,7 +90,7 @@ export default function WaterScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
                 onPress={() => router.back()}
-                style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}>
+                style={({ pressed }) => [styles.roundButton, { backgroundColor: tileColor }, pressed && styles.pressed]}>
                 <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
               </Pressable>
               <ThemedText style={[styles.wordmark, { color: inkColor }]}>water tracker</ThemedText>
@@ -95,6 +99,7 @@ export default function WaterScreen() {
 
             <View style={styles.heading}>
               <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
+              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S WATER INTAKE</ThemedText>
             </View>
 
             <TrackerMascot
@@ -155,12 +160,12 @@ export default function WaterScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Undo last glass"
-                  accessibilityState={{ disabled: waterGlasses.length === 0 }}
-                  disabled={waterGlasses.length === 0}
+                  accessibilityState={{ disabled: todayGlasses.length === 0 }}
+                  disabled={todayGlasses.length === 0}
                   onPress={removeGlass}
                   style={({ pressed }) => [
                     styles.undoButton,
-                    { borderColor, opacity: waterGlasses.length === 0 ? 0.45 : (pressed ? 0.7 : 1) },
+                    { borderColor, opacity: todayGlasses.length === 0 ? 0.45 : (pressed ? 0.7 : 1) },
                   ]}>
                   <ThemedText style={[styles.undoText, { color: inkColor }]}>Undo last</ThemedText>
                 </Pressable>

@@ -217,7 +217,8 @@ export default function DietScreen() {
                   {mealTypes.map(type => (
                     <Pressable
                       key={type}
-                      accessibilityRole="button"
+                      accessibilityLabel={type}
+                      accessibilityRole="radio"
                       accessibilityState={{ selected: mealType === type }}
                       onPress={() => setMealType(type)}
                       style={[styles.mealTypeButton, { borderColor, backgroundColor: mealType === type ? panelGreen : controlColor }]}>

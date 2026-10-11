@@ -10,7 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { NavigationColors, Spacing } from '@/constants/theme';
 import { doctors } from '@/data/mock-data';
 import { useTheme } from '@/hooks/use-theme';
-import { saveAppointment } from '@/utils/appointmentStorage';
+import { AppointmentConflictError, saveAppointment } from '@/utils/appointmentStorage';
 import { useAlert } from '@/hooks/use-alert';
 
 const formatTimeSlot = (slot: string) => {
@@ -142,6 +142,18 @@ export default function BookingScreen() {
       return;
     }
 
+    const [hours, minutes] = time.split(':').map(Number);
+    const scheduledDate = new Date(date);
+    scheduledDate.setHours(hours, minutes, 0, 0);
+    if (scheduledDate <= new Date()) {
+      showAlert({
+        title: 'Select a future time',
+        message: 'That time has already passed. Choose a later appointment slot.',
+        type: 'warning',
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       const dateString = formatDateForDisplay(date);
@@ -152,6 +164,7 @@ export default function BookingScreen() {
         specialty: selectedDoctor.specialty,
         date: dateString,
         time: timeLabel,
+        scheduledAt: scheduledDate.toISOString(),
       };
 
       await saveAppointment(appointmentData);
@@ -164,12 +177,20 @@ export default function BookingScreen() {
         confirmText: 'OK',
       });
     } catch (error) {
-      console.error('Failed to save appointment:', error);
-      showAlert({
-        title: 'Unable to save appointment',
-        message: 'Please try again.',
-        type: 'error',
-      });
+      if (error instanceof AppointmentConflictError) {
+        showAlert({
+          title: 'Time no longer available',
+          message: error.message,
+          type: 'warning',
+        });
+      } else {
+        console.error('Failed to save appointment:', error);
+        showAlert({
+          title: 'Unable to save appointment',
+          message: 'Please try again.',
+          type: 'error',
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -234,7 +255,7 @@ export default function BookingScreen() {
                 <Pressable
                   key={slot}
                   accessibilityLabel={`${formatTimeSlot(slot)}${selected ? ', selected' : ''}`}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{ selected }}
                   onPress={() => setTime(slot)}
                   style={({ pressed }) => [

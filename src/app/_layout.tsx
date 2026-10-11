@@ -7,15 +7,16 @@ import { useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { HealthDataProvider } from '@/context/HealthDataContext';
+import { HealthDataProvider, useHealthData } from '@/context/HealthDataContext';
 import { ProfileProvider, useSharedProfile } from '@/context/ProfileContext';
 
 SplashScreen.preventAutoHideAsync();
 
 function AppGate() {
-  const { loading } = useSharedProfile();
+  const { loading: profileLoading } = useSharedProfile();
+  const { loading: healthDataLoading } = useHealthData();
 
-  if (loading) {
+  if (profileLoading || healthDataLoading) {
     return (
       <ThemedView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ThemedText>Loading your profile...</ThemedText>

@@ -118,6 +118,7 @@ export default function EditProfileScreen() {
       <ThemedText style={[styles.fieldLabel, { color: colors.mutedInk }]}>{label}{unit ? ` (${unit})` : ''}</ThemedText>
       <View style={[styles.inputWrap, { backgroundColor: colors.fieldColor, borderColor: errors[key] ? colors.errorColor : colors.borderColor }]}>
         <TextInput
+          accessibilityLabel={label}
           autoCapitalize={keyboardType === 'default' ? 'words' : 'none'}
           keyboardType={keyboardType}
           onChangeText={onChangeText}
@@ -157,8 +158,8 @@ export default function EditProfileScreen() {
                   <View style={styles.options}>{HEALTH_GOAL_OPTIONS.map(option => <OptionButton key={option.value} label={option.label} selected={primaryGoal === option.value} onPress={() => setPrimaryGoal(option.value)} colors={colors} />)}</View>
                 </View>
                 <View style={styles.actions}>
-                  <Pressable accessibilityRole="button" onPress={() => router.back()} style={[styles.actionButton, styles.cancelButton, { borderColor, backgroundColor: cardColor }]}><ThemedText style={[styles.actionText, { color: inkColor }]}>CANCEL</ThemedText></Pressable>
-                  <Pressable accessibilityRole="button" disabled={isSaving} onPress={handleSave} style={[styles.actionButton, { backgroundColor: panelGreen, opacity: isSaving ? 0.6 : 1 }]}><ThemedText style={[styles.actionText, { color: '#ffffff' }]}>{isSaving ? 'SAVING…' : 'SAVE PROFILE'}</ThemedText></Pressable>
+                  <Pressable accessibilityLabel="Cancel profile edits" accessibilityRole="button" onPress={() => router.back()} style={[styles.actionButton, styles.cancelButton, { borderColor, backgroundColor: cardColor }]}><ThemedText style={[styles.actionText, { color: inkColor }]}>CANCEL</ThemedText></Pressable>
+                  <Pressable accessibilityLabel={isSaving ? 'Saving profile' : 'Save profile'} accessibilityRole="button" accessibilityState={{ disabled: isSaving }} disabled={isSaving} onPress={handleSave} style={[styles.actionButton, { backgroundColor: panelGreen, opacity: isSaving ? 0.6 : 1 }]}><ThemedText style={[styles.actionText, { color: '#ffffff' }]}>{isSaving ? 'SAVING…' : 'SAVE PROFILE'}</ThemedText></Pressable>
                 </View>
               </View>
             </ScrollView>
@@ -177,6 +178,7 @@ function FormField({ label, unit, value, placeholder, error, keyboardType, onCha
       <ThemedText style={[styles.fieldLabel, { color: colors.mutedInk }]}>{label}{unit ? ` (${unit})` : ''}</ThemedText>
       <View style={[styles.inputWrap, { backgroundColor: colors.fieldColor, borderColor: error ? colors.errorColor : colors.borderColor }]}>
         <TextInput
+          accessibilityLabel={label}
           autoCapitalize={keyboardType === 'default' ? 'words' : 'none'}
           keyboardType={keyboardType}
           onChangeText={onChangeText}

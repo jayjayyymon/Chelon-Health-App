@@ -23,8 +23,7 @@ export async function loadWeightHistory(): Promise<WeightEntry[] | null> {
     const parsed: unknown = JSON.parse(stored);
     if (!Array.isArray(parsed)) return null;
 
-    const entries = parsed.filter(isWeightEntry);
-    return entries.length === parsed.length ? entries : null;
+    return parsed.filter(isWeightEntry);
   } catch (error) {
     console.error('Failed to load weight history:', error);
     return null;

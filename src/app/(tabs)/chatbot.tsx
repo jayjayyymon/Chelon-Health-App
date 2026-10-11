@@ -32,6 +32,7 @@ export default function ChatbotScreen() {
   const [inputText, setInputText] = useState<string>('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const messagesRef = useRef<ScrollView>(null);
+  const pendingReplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const isDark = colorScheme === 'dark';
 
@@ -58,6 +59,12 @@ export default function ChatbotScreen() {
   }, [messages.length]);
 
   useEffect(() => {
+    return () => {
+      if (pendingReplyRef.current) clearTimeout(pendingReplyRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const showSubscription = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
@@ -71,7 +78,10 @@ export default function ChatbotScreen() {
 
   // Helper function to calculate today's water intake in liters
   const getTodayWaterIntakeL = (): number => {
-    const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
+    const todayKey = getLocalDateKey();
+    const totalMl = waterGlasses
+      .filter(glass => (glass.dateKey ?? todayKey) === todayKey)
+      .reduce((sum, glass) => sum + glass.amountMl, 0);
     return totalMl / 1000;
   };
 
@@ -82,12 +92,14 @@ export default function ChatbotScreen() {
 
   // Helper function to get latest sleep entry
   const getLatestSleep = (): { id: string; date: string; hours: number } | null => {
-    return sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
+    const todayKey = getLocalDateKey();
+    return sleepHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
   };
 
   // Helper function to get latest steps entry
   const getLatestSteps = (): { id: string; date: string; steps: number } | null => {
-    return stepsHistory.length > 0 ? stepsHistory[stepsHistory.length - 1] : null;
+    const todayKey = getLocalDateKey();
+    return stepsHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
   };
 
   // Helper function to calculate today's total calories from meals
@@ -229,8 +241,10 @@ export default function ChatbotScreen() {
     };
 
     // Add bot message after a short delay for better UX
-    setTimeout(() => {
+    if (pendingReplyRef.current) clearTimeout(pendingReplyRef.current);
+    pendingReplyRef.current = setTimeout(() => {
       setMessages(prev => [...prev, botMessage]);
+      pendingReplyRef.current = null;
     }, 500);
 
     // Clear input

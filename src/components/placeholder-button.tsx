@@ -1,4 +1,4 @@
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -10,16 +10,22 @@ type PlaceholderButtonProps = {
 };
 
 export function PlaceholderButton({ label, onPress }: PlaceholderButtonProps) {
-  const ButtonComponent = onPress ? TouchableOpacity : ThemedView;
+  if (!onPress) {
+    return (
+      <ThemedView type="backgroundSelected" style={styles.button}>
+        <ThemedText type="smallBold">{label}</ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
-    <ButtonComponent
-      type="backgroundSelected"
-      style={styles.button}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
-    >
+      style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
       <ThemedText type="smallBold">{label}</ThemedText>
-    </ButtonComponent>
+    </Pressable>
   );
 }
 
@@ -29,5 +35,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.two,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

@@ -1,4 +1,4 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -22,6 +22,7 @@ import {
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 const getSleepDurationMinutes = (bedtime: Date | null, wakeTime: Date | null) => {
   if (!bedtime || !wakeTime) return null;
@@ -50,8 +51,7 @@ const formatDurationParts = (hours: number | null) => {
 };
 
 const formatDate = (date: string | null) => {
-  const currentYear = new Date().getFullYear();
-  const parsedDate = date ? new Date(`${date}, ${currentYear}`) : new Date();
+  const parsedDate = date ? new Date(`${date}T00:00:00`) : new Date();
   const displayDate = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
 
   return displayDate.toLocaleDateString(undefined, {
@@ -69,6 +69,8 @@ export default function SleepScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const { sleepHistory, addSleep } = useHealthData();
   const { profile } = useProfile();
+  const todayKey = getLocalDateKey();
+  const mostRecentSleep = sleepHistory.find(entry => (entry.dateKey ?? entry.date) === todayKey) ?? null;
   const [bedtime, setBedtime] = useState<Date | null>(null);
   const [wakeTime, setWakeTime] = useState<Date | null>(null);
   const [showBedtimePicker, setShowBedtimePicker] = useState(false);
@@ -78,7 +80,6 @@ export default function SleepScreen() {
   const sleepDuration = durationMinutes === null
     ? null
     : `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 ? ` ${durationMinutes % 60}m` : ''}`;
-  const mostRecentSleep = sleepHistory.length > 0 ? sleepHistory[sleepHistory.length - 1] : null;
   const displayedHours = durationMinutes === null
     ? mostRecentSleep?.hours ?? null
     : durationMinutes / 60;
@@ -105,7 +106,7 @@ export default function SleepScreen() {
     setShowBedtimePicker(false);
   };
 
-  const handleBedtimeChange = (_event: any, selectedDate?: Date | null) => {
+  const handleBedtimeChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowBedtimePicker(false);
     if (selectedDate) {
       setBedtime(selectedDate);
@@ -120,7 +121,7 @@ export default function SleepScreen() {
     setShowWakeTimePicker(false);
   };
 
-  const handleWakeTimeChange = (_event: any, selectedDate?: Date | null) => {
+  const handleWakeTimeChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowWakeTimePicker(false);
     if (selectedDate) {
       setWakeTime(selectedDate);
@@ -147,10 +148,8 @@ export default function SleepScreen() {
     const sleepHours = parseFloat((durationMinutes / 60).toFixed(1));
     const sleepEntry = {
       id: `sleep-${Date.now()}`,
-      date: bedtime.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      }),
+      date: getLocalDateKey(),
+      dateKey: getLocalDateKey(),
       hours: sleepHours,
       bedtime: formatTimeForDisplay(bedtime),
       wakeTime: formatTimeForDisplay(wakeTime),
@@ -297,7 +296,7 @@ export default function SleepScreen() {
           mode="time"
           display="default"
           locale="en-US"
-          onValueChange={handleBedtimeChange}
+          onChange={handleBedtimeChange}
           onDismiss={hideBedtimePickerHandler}
           onNeutralButtonPress={hideBedtimePickerHandler}
         />
@@ -308,7 +307,7 @@ export default function SleepScreen() {
           mode="time"
           display="default"
           locale="en-US"
-          onValueChange={handleWakeTimeChange}
+          onChange={handleWakeTimeChange}
           onDismiss={hideWakeTimePickerHandler}
           onNeutralButtonPress={hideWakeTimePickerHandler}
         />
