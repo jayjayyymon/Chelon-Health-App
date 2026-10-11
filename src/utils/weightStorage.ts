@@ -31,10 +31,12 @@ export async function loadWeightHistory(): Promise<WeightEntry[] | null> {
   }
 }
 
-export async function saveWeightHistory(history: WeightEntry[]): Promise<void> {
+export async function saveWeightHistory(history: WeightEntry[]): Promise<boolean> {
   try {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    return true;
   } catch (error) {
     console.error('Failed to save weight history:', error);
+    return false;
   }
 }

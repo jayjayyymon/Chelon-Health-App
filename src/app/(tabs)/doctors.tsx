@@ -39,12 +39,6 @@ export default function DoctorsScreen() {
         </ThemedText>
       </View>
 
-      <View style={styles.listHeader}>
-        <ThemedText type="smallBold">Available care team</ThemedText>
-        <ThemedText themeColor="textSecondary" type="small">
-          {doctors.length} {doctors.length === 1 ? 'doctor' : 'doctors'}
-        </ThemedText>
-      </View>
 
       {doctors.length === 0 ? (
         <ThemedView type="backgroundElement" style={styles.emptyState}>
@@ -113,7 +107,7 @@ const styles = StyleSheet.create({
   intro: {
     gap: Spacing.one,
     padding: Spacing.three,
-    borderRadius: 20,
+    borderRadius:20,
   },
   introEyebrow: {
     fontSize: 11,
@@ -142,7 +136,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     marginHorizontal: -8,
     marginBottom: Spacing.four,
-    paddingTop: 16,
+    paddingTop: 0,
     paddingBottom: 100,
   },
   doctorCard: {

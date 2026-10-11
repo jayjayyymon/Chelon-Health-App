@@ -83,7 +83,6 @@ export default function StepsScreen() {
 
             <View style={styles.heading}>
               <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
-              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S STEPS</ThemedText>
             </View>
 
             <TrackerMascot

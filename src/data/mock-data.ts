@@ -66,13 +66,28 @@ export const chatbotMessages = [
   },
 ];
 
-export const healthCenters = [
+export type HealthCenter = {
+  id: string;
+  name: string;
+  type: string;
+  distance: string;
+  hours: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+};
+
+// Sample locations for the prototype map; these are not verified providers.
+export const healthCenters: HealthCenter[] = [
   {
     id: 'h1',
     name: 'Riverside Clinic',
     type: 'Primary care',
     distance: '0.8 km',
     hours: '8:00 AM – 6:00 PM',
+    address: '123 Riverside Avenue (sample address)',
+    latitude: 40.7142,
+    longitude: -74.0048,
   },
   {
     id: 'h2',
@@ -80,6 +95,9 @@ export const healthCenters = [
     type: 'Walk-in',
     distance: '1.4 km',
     hours: '9:00 AM – 8:00 PM',
+    address: '48 Harbor Street (sample address)',
+    latitude: 40.7098,
+    longitude: -74.0121,
   },
   {
     id: 'h3',
@@ -87,6 +105,9 @@ export const healthCenters = [
     type: 'Community clinic',
     distance: '2.1 km',
     hours: '7:30 AM – 5:00 PM',
+    address: '77 Northside Road (sample address)',
+    latitude: 40.7201,
+    longitude: -73.9987,
   },
 ];
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, Dispatch, SetStateAction } from 'react';
-import { weightHistory, waterSummary, sleepLastNight, stepsToday, dietMeals } from '@/data/mock-data';
+import { waterSummary, sleepLastNight, stepsToday, dietMeals } from '@/data/mock-data';
 import { loadWeightHistory, saveWeightHistory } from '@/utils/weightStorage';
 import { getLocalDateKey, loadDietMeals, saveDietMeals } from '@/utils/dietStorage';
 
@@ -69,7 +69,7 @@ export const useHealthData = () => {
 };
 
 export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
-  const [weightHistoryState, setWeightHistoryState] = useState<WeightEntry[]>(weightHistory);
+  const [weightHistoryState, setWeightHistoryState] = useState<WeightEntry[]>([]);
   const [weightHistoryHydrated, setWeightHistoryHydrated] = useState(false);
   const [waterGlassesState, setWaterGlassesState] = useState<WaterGlass[]>(waterSummary.glasses);
 
@@ -78,7 +78,8 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
 
     loadWeightHistory().then(storedHistory => {
       if (!active) return;
-      if (storedHistory !== null) setWeightHistoryState(storedHistory);
+      const hydratedHistory = storedHistory ?? [];
+      setWeightHistoryState(hydratedHistory);
       setWeightHistoryHydrated(true);
     });
 
@@ -88,10 +89,10 @@ export const HealthDataProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (weightHistoryHydrated) {
-      void saveWeightHistory(weightHistoryState);
-    }
+    if (!weightHistoryHydrated) return;
+    void saveWeightHistory(weightHistoryState);
   }, [weightHistoryHydrated, weightHistoryState]);
+
   const [dietMealsState, setDietMealsState] = useState<DietMeal[]>(dietMeals);
   const [dietMealsHydrated, setDietMealsHydrated] = useState(false);
 

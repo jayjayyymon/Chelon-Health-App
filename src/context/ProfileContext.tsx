@@ -1,11 +1,12 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { getDefaultProfile, loadProfile, saveProfile, UserProfile } from '@/utils/profileStorage';
+import { clearProfileData, getDefaultProfile, loadProfile, saveProfile, UserProfile } from '@/utils/profileStorage';
 
 type ProfileContextType = {
   profile: UserProfile;
   loading: boolean;
   updateProfile: (updates: Partial<UserProfile>) => void;
   saveProfile: (profile: UserProfile) => Promise<boolean>;
+  resetProfile: () => Promise<boolean>;
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -16,11 +17,12 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const loadUserProfile = async () => {
-      setProfile(await loadProfile());
+      const loadedProfile = await loadProfile();
+      setProfile(loadedProfile);
       setLoading(false);
     };
 
-    loadUserProfile();
+    void loadUserProfile();
   }, []);
 
   const updateProfile = (updates: Partial<UserProfile>) => {
@@ -38,6 +40,17 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const resetSharedProfile = async () => {
+    try {
+      await clearProfileData();
+      setProfile(getDefaultProfile());
+      return true;
+    } catch (error) {
+      console.error('Error clearing profile data:', error);
+      return false;
+    }
+  };
+
   return React.createElement(
     ProfileContext.Provider,
     {
@@ -46,6 +59,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
         loading,
         updateProfile,
         saveProfile: saveSharedProfile,
+        resetProfile: resetSharedProfile,
       },
     },
     children,

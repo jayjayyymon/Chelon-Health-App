@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/
 import { useHealthData, type DietMeal } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
 import { getLocalDateKey } from '@/utils/dietStorage';
+import { useAlert } from '@/hooks/use-alert';
 
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Custom'] as const;
 const accentGreen = NavigationColors.background;
@@ -38,6 +38,7 @@ export default function DietScreen() {
   const [calories, setCalories] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
 
   const todayKey = getLocalDateKey();
   const currentDate = useMemo(
@@ -118,171 +119,178 @@ export default function DietScreen() {
   };
 
   const handleRemoveMeal = (meal: DietMeal) => {
-    Alert.alert('Remove meal?', `Remove ${meal.name} from today’s log?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeDietMeal(meal.id) },
-    ]);
+    showAlert({
+      title: 'Remove meal?',
+      message: `Remove ${meal.name} from today’s log?`,
+      type: 'confirmation',
+      onConfirm: () => removeDietMeal(meal.id),
+      cancelText: 'Cancel',
+      confirmText: 'Remove',
+    });
   };
 
   return (
-    <ThemedView style={styles.root}>
-      <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: heroTint }]} />
-      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.content}>
-            <View style={styles.topBar}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                onPress={() => router.back()}
-                style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}>
-                <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
-              </Pressable>
-              <ThemedText style={[styles.wordmark, { color: inkColor }]}>diet tracker</ThemedText>
-              <View style={styles.topBarSpacer} />
-            </View>
-
-            <View style={styles.heading}>
-              <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
-              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S CALORIE INTAKE</ThemedText>
-            </View>
-
-            <TrackerMascot
-              accessibilityLabel="CHELON turtle eating a healthy meal"
-              source={require('../../assets/icons/cutie-calorie.png')}
-            />
-
-            <View style={[styles.progressCard, { backgroundColor: panelGreen }]}>
-              <View style={styles.progressHeader}>
-                <ThemedText style={[styles.progressLabel, { color: panelText }]}>DAILY PROGRESS</ThemedText>
-                <ThemedText style={[styles.progressPercent, { color: panelText }]}>{Math.round(progress)}%</ThemedText>
-              </View>
-              <View
-                accessibilityRole="progressbar"
-                accessibilityLabel="Daily calorie goal progress"
-                accessibilityValue={{ min: 0, max: 100, now: Math.round(progress) }}
-                style={[styles.progressTrack, { borderColor: 'rgba(255,255,255,0.88)' }]}>
-                <View style={[styles.progressFill, { width: `${progress}%` }]} />
+    <View style={{ flex: 1 }}>
+      <ThemedView style={styles.root}>
+        <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: heroTint }]} />
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.content}>
+              <View style={styles.topBar}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  onPress={() => router.back()}
+                  style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}>
+                  <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
+                </Pressable>
+                <ThemedText style={[styles.wordmark, { color: inkColor }]}>diet tracker</ThemedText>
+                <View style={styles.topBarSpacer} />
               </View>
 
-              <View style={styles.statsRow}>
-                <View style={[styles.statTile, { backgroundColor: tileColor }]}>
-                  <ThemedText style={[styles.statLabel, { color: mutedInk }]}>TODAY</ThemedText>
-                  <View style={styles.statValueRow}>
-                    <ThemedText style={[styles.statValue, { color: inkColor }]}>{totalCalories.toLocaleString()}</ThemedText>
-                    <ThemedText style={[styles.statUnit, { color: inkColor }]}>kcal</ThemedText>
+              <View style={styles.heading}>
+                <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
+                <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S CALORIE INTAKE</ThemedText>
+              </View>
+
+              <TrackerMascot
+                accessibilityLabel="CHELON turtle eating a healthy meal"
+                source={require('../../assets/icons/cutie-calorie.png')}
+              />
+
+              <View style={[styles.progressCard, { backgroundColor: panelGreen }]}>
+                <View style={styles.progressHeader}>
+                  <ThemedText style={[styles.progressLabel, { color: panelText }]}>DAILY PROGRESS</ThemedText>
+                  <ThemedText style={[styles.progressPercent, { color: panelText }]}>{Math.round(progress)}%</ThemedText>
+                </View>
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityLabel="Daily calorie goal progress"
+                  accessibilityValue={{ min: 0, max: 100, now: Math.round(progress) }}
+                  style={[styles.progressTrack, { borderColor: 'rgba(255,255,255,0.88)' }]}>
+                  <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                </View>
+
+                <View style={styles.statsRow}>
+                  <View style={[styles.statTile, { backgroundColor: tileColor }]}>
+                    <ThemedText style={[styles.statLabel, { color: mutedInk }]}>TODAY</ThemedText>
+                    <View style={styles.statValueRow}>
+                      <ThemedText style={[styles.statValue, { color: inkColor }]}>{totalCalories.toLocaleString()}</ThemedText>
+                      <ThemedText style={[styles.statUnit, { color: inkColor }]}>kcal</ThemedText>
+                    </View>
+                    <ThemedText style={[styles.statDetail, { color: mutedInk }]}>{todayMeals.length} meal{todayMeals.length === 1 ? '' : 's'} logged</ThemedText>
                   </View>
-                  <ThemedText style={[styles.statDetail, { color: mutedInk }]}>{todayMeals.length} meal{todayMeals.length === 1 ? '' : 's'} logged</ThemedText>
-                </View>
-                <View style={[styles.statTile, { backgroundColor: tileColor }]}>
-                  <ThemedText style={[styles.statLabel, { color: mutedInk }]}>GOAL</ThemedText>
-                  <View style={styles.statValueRow}>
-                    <ThemedText style={[styles.statValue, { color: inkColor }]}>{calorieGoal.toLocaleString()}</ThemedText>
-                    <ThemedText style={[styles.statUnit, { color: inkColor }]}>kcal</ThemedText>
+                  <View style={[styles.statTile, { backgroundColor: tileColor }]}>
+                    <ThemedText style={[styles.statLabel, { color: mutedInk }]}>GOAL</ThemedText>
+                    <View style={styles.statValueRow}>
+                      <ThemedText style={[styles.statValue, { color: inkColor }]}>{calorieGoal.toLocaleString()}</ThemedText>
+                      <ThemedText style={[styles.statUnit, { color: inkColor }]}>kcal</ThemedText>
+                    </View>
+                    <ThemedText style={[styles.statDetail, { color: mutedInk }]}>Daily target</ThemedText>
                   </View>
-                  <ThemedText style={[styles.statDetail, { color: mutedInk }]}>Daily target</ThemedText>
                 </View>
               </View>
-            </View>
 
-            <View style={[styles.formCard, { backgroundColor: theme.background, borderColor }]}>
-              <View style={styles.sectionHeading}>
-                <View>
-                  <ThemedText style={[styles.sectionTitle, { color: inkColor }]}>{editingId ? 'Edit meal' : 'Log a meal'}</ThemedText>
-                  <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>Keep a simple record of what you eat.</ThemedText>
+              <View style={[styles.formCard, { backgroundColor: theme.background, borderColor }]}>
+                <View style={styles.sectionHeading}>
+                  <View>
+                    <ThemedText style={[styles.sectionTitle, { color: inkColor }]}>{editingId ? 'Edit meal' : 'Log a meal'}</ThemedText>
+                    <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>Keep a simple record of what you eat.</ThemedText>
+                  </View>
+                  {editingId && (
+                    <Pressable accessibilityRole="button" accessibilityLabel="Cancel editing" onPress={resetForm}>
+                      <ThemedText style={[styles.cancelText, { color: mutedInk }]}>Cancel</ThemedText>
+                    </Pressable>
+                  )}
                 </View>
-                {editingId && (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Cancel editing" onPress={resetForm}>
-                    <ThemedText style={[styles.cancelText, { color: mutedInk }]}>Cancel</ThemedText>
-                  </Pressable>
+                <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>FOOD NAME</ThemedText>
+                <TextInput
+                  accessibilityLabel="Food name"
+                  placeholder="e.g. Oatmeal"
+                  placeholderTextColor={mutedInk}
+                  value={foodName}
+                  onChangeText={text => { setFoodName(text); setError(null); }}
+                  style={[styles.input, { color: inkColor, backgroundColor: controlColor, borderColor }]}
+                />
+                <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>MEAL TYPE</ThemedText>
+                <View style={styles.mealTypeRow}>
+                  {mealTypes.map(type => (
+                    <Pressable
+                      key={type}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: mealType === type }}
+                      onPress={() => setMealType(type)}
+                      style={[styles.mealTypeButton, { borderColor, backgroundColor: mealType === type ? panelGreen : controlColor }]}>
+                      <ThemedText style={[styles.mealTypeText, { color: mealType === type ? panelText : mutedInk }]}>{type}</ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+                <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>CALORIES</ThemedText>
+                <TextInput
+                  accessibilityLabel="Calories"
+                  placeholder="e.g. 420"
+                  placeholderTextColor={mutedInk}
+                  value={calories}
+                  onChangeText={text => { setCalories(text); setError(null); }}
+                  keyboardType="number-pad"
+                  style={[styles.input, { color: inkColor, backgroundColor: controlColor, borderColor }]}
+                />
+                {error && <ThemedText style={[styles.errorText, { color: isDark ? '#ffb4ab' : '#b3261e' }]}>{error}</ThemedText>}
+                <TrackerActionButton
+                  accessibilityLabel={editingId ? 'Save meal changes' : 'Add meal'}
+                  backgroundColor={panelGreen}
+                  color={panelText}
+                  icon="＋"
+                  label={editingId ? 'SAVE CHANGES' : 'ADD MEAL'}
+                  onPress={handleSaveMeal}
+                />
+              </View>
+
+              <View style={[styles.recentCard, { backgroundColor: theme.background, borderColor }]}>
+                <View style={styles.sectionHeading}>
+                  <View>
+                    <ThemedText style={[styles.sectionTitle, { color: inkColor }]}>Today&apos;s meals</ThemedText>
+                    <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>Your latest food entries</ThemedText>
+                  </View>
+                </View>
+                {todayMeals.length > 0 ? todayMeals.map(meal => (
+                    <View key={meal.id} style={[styles.mealRow, { borderTopColor: borderColor }]}>
+                      <View style={styles.mealRowText}>
+                        <ThemedText style={[styles.mealName, { color: inkColor }]}>{meal.name}</ThemedText>
+                        <ThemedText style={[styles.mealMeta, { color: mutedInk }]}>{meal.meal}</ThemedText>
+                      </View>
+                      <ThemedText style={[styles.mealCalories, { color: inkColor }]}>{meal.calories.toLocaleString()} kcal</ThemedText>
+                      <View style={styles.rowActions}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${meal.name}`} onPress={() => handleEditMeal(meal)}>
+                          <ThemedText style={[styles.actionText, { color: inkColor }]}>Edit</ThemedText>
+                        </Pressable>
+                        <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${meal.name}`} onPress={() => handleRemoveMeal(meal)}>
+                          <ThemedText style={[styles.actionText, { color: isDark ? '#ffb4ab' : '#b3261e' }]}>Remove</ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+                )) : (
+                  <ThemedText style={[styles.emptyText, { color: mutedInk }]}>No meals logged today. Add your first meal above.</ThemedText>
                 )}
               </View>
-              <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>FOOD NAME</ThemedText>
-              <TextInput
-                accessibilityLabel="Food name"
-                placeholder="e.g. Oatmeal"
-                placeholderTextColor={mutedInk}
-                value={foodName}
-                onChangeText={text => { setFoodName(text); setError(null); }}
-                style={[styles.input, { color: inkColor, backgroundColor: controlColor, borderColor }]}
-              />
-              <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>MEAL TYPE</ThemedText>
-              <View style={styles.mealTypeRow}>
-                {mealTypes.map(type => (
-                  <Pressable
-                    key={type}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: mealType === type }}
-                    onPress={() => setMealType(type)}
-                    style={[styles.mealTypeButton, { borderColor, backgroundColor: mealType === type ? panelGreen : controlColor }]}>
-                    <ThemedText style={[styles.mealTypeText, { color: mealType === type ? panelText : mutedInk }]}>{type}</ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-              <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>CALORIES</ThemedText>
-              <TextInput
-                accessibilityLabel="Calories"
-                placeholder="e.g. 420"
-                placeholderTextColor={mutedInk}
-                value={calories}
-                onChangeText={text => { setCalories(text); setError(null); }}
-                keyboardType="number-pad"
-                style={[styles.input, { color: inkColor, backgroundColor: controlColor, borderColor }]}
-              />
-              {error && <ThemedText style={[styles.errorText, { color: isDark ? '#ffb4ab' : '#b3261e' }]}>{error}</ThemedText>}
-              <TrackerActionButton
-                accessibilityLabel={editingId ? 'Save meal changes' : 'Add meal'}
-                backgroundColor={panelGreen}
-                color={panelText}
-                icon="＋"
-                label={editingId ? 'SAVE CHANGES' : 'ADD MEAL'}
-                onPress={handleSaveMeal}
-              />
-            </View>
 
-            <View style={[styles.recentCard, { backgroundColor: theme.background, borderColor }]}>
-              <View style={styles.sectionHeading}>
-                <View>
-                  <ThemedText style={[styles.sectionTitle, { color: inkColor }]}>Today&apos;s meals</ThemedText>
-                  <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>Your latest food entries</ThemedText>
+              <View style={[styles.tipsCard, { backgroundColor: panelGreen }]}>
+                <ThemedText style={[styles.tipsTitle, { color: panelText }]}>A balanced plate, one meal at a time</ThemedText>
+                <View style={styles.tipRow}>
+                  <View style={styles.tipDot} />
+                  <ThemedText style={[styles.tipText, { color: panelText }]}>Include a mix of vegetables, protein, and satisfying whole-food carbohydrates.</ThemedText>
+                </View>
+                <View style={styles.tipRow}>
+                  <View style={styles.tipDot} />
+                  <ThemedText style={[styles.tipText, { color: panelText }]}>Use your log as a gentle guide, not a replacement for personal nutrition advice.</ThemedText>
                 </View>
               </View>
-              {todayMeals.length > 0 ? todayMeals.map(meal => (
-                <View key={meal.id} style={[styles.mealRow, { borderTopColor: borderColor }]}>
-                  <View style={styles.mealRowText}>
-                    <ThemedText style={[styles.mealName, { color: inkColor }]}>{meal.name}</ThemedText>
-                    <ThemedText style={[styles.mealMeta, { color: mutedInk }]}>{meal.meal}</ThemedText>
-                  </View>
-                  <ThemedText style={[styles.mealCalories, { color: inkColor }]}>{meal.calories.toLocaleString()} kcal</ThemedText>
-                  <View style={styles.rowActions}>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${meal.name}`} onPress={() => handleEditMeal(meal)}>
-                      <ThemedText style={[styles.actionText, { color: inkColor }]}>Edit</ThemedText>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${meal.name}`} onPress={() => handleRemoveMeal(meal)}>
-                      <ThemedText style={[styles.actionText, { color: isDark ? '#ffb4ab' : '#b3261e' }]}>Remove</ThemedText>
-                    </Pressable>
-                  </View>
-                </View>
-              )) : (
-                <ThemedText style={[styles.emptyText, { color: mutedInk }]}>No meals logged today. Add your first meal above.</ThemedText>
-              )}
             </View>
-
-            <View style={[styles.tipsCard, { backgroundColor: panelGreen }]}>
-              <ThemedText style={[styles.tipsTitle, { color: panelText }]}>A balanced plate, one meal at a time</ThemedText>
-              <View style={styles.tipRow}>
-                <View style={styles.tipDot} />
-                <ThemedText style={[styles.tipText, { color: panelText }]}>Include a mix of vegetables, protein, and satisfying whole-food carbohydrates.</ThemedText>
-              </View>
-              <View style={styles.tipRow}>
-                <View style={styles.tipDot} />
-                <ThemedText style={[styles.tipText, { color: panelText }]}>Use your log as a gentle guide, not a replacement for personal nutrition advice.</ThemedText>
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+          </ScrollView>
+        </SafeAreaView>
+      </ThemedView>
+      <AlertComponent />
+    </View>
   );
 }
 
@@ -335,7 +343,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 13, lineHeight: 19, paddingVertical: Spacing.two },
   tipsCard: { marginTop: Spacing.three, borderRadius: 20, padding: Spacing.three, gap: Spacing.two },
   tipsTitle: { fontSize: 15, fontWeight: '800', marginBottom: Spacing.one },
-  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  tipRow: { flexDirection: 'row', gap: Spacing.two },
   tipDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, backgroundColor: '#c8edce' },
   tipText: { flex: 1, fontSize: 12, lineHeight: 18 },
   pressed: { opacity: 0.75 },

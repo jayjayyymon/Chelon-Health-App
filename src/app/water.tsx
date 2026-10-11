@@ -95,7 +95,6 @@ export default function WaterScreen() {
 
             <View style={styles.heading}>
               <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
-              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S WATER INTAKE</ThemedText>
             </View>
 
             <TrackerMascot

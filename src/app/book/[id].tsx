@@ -1,7 +1,7 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { InfoRow } from '@/components/info-row';
 import { ScreenContainer } from '@/components/screen-container';
@@ -11,6 +11,7 @@ import { NavigationColors, Spacing } from '@/constants/theme';
 import { doctors } from '@/data/mock-data';
 import { useTheme } from '@/hooks/use-theme';
 import { saveAppointment } from '@/utils/appointmentStorage';
+import { useAlert } from '@/hooks/use-alert';
 
 const formatTimeSlot = (slot: string) => {
   const [hours, minutes] = slot.split(':').map(Number);
@@ -79,26 +80,34 @@ export default function BookingScreen() {
   const borderColor = isDark ? '#397258' : '#d9e7dc';
   const mutedColor = theme.textSecondary;
 
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
+
   // Handle missing or invalid ID gracefully.
   if (!id) {
     return (
-      <ScreenContainer inTabs>
-        <BookingPageHeading title="Doctor not found" subtitle="Invalid doctor selection" />
-        <ThemedView type="backgroundElement" style={styles.errorCard}>
-          <ThemedText>Please select a valid doctor from the Doctors section.</ThemedText>
-        </ThemedView>
-      </ScreenContainer>
+      <View style={{ flex: 1 }}>
+        <ScreenContainer inTabs>
+          <BookingPageHeading title="Doctor not found" subtitle="Invalid doctor selection" />
+          <ThemedView type="backgroundElement" style={styles.errorCard}>
+            <ThemedText>Please select a valid doctor from the Doctors section.</ThemedText>
+          </ThemedView>
+        </ScreenContainer>
+        <AlertComponent />
+      </View>
     );
   }
 
   if (!selectedDoctor) {
     return (
-      <ScreenContainer inTabs>
-        <BookingPageHeading title="Doctor not found" />
-        <ThemedView type="backgroundElement" style={styles.errorCard}>
-          <ThemedText>We could not find that doctor. Please choose someone from the list.</ThemedText>
-        </ThemedView>
-      </ScreenContainer>
+      <View style={{ flex: 1 }}>
+        <ScreenContainer inTabs>
+          <BookingPageHeading title="Doctor not found" />
+          <ThemedView type="backgroundElement" style={styles.errorCard}>
+            <ThemedText>We could not find that doctor. Please choose someone from the list.</ThemedText>
+          </ThemedView>
+        </ScreenContainer>
+        <AlertComponent />
+      </View>
     );
   }
 
@@ -116,12 +125,20 @@ export default function BookingScreen() {
 
   const handleBookAppointment = async () => {
     if (!date || date < minDate) {
-      Alert.alert('Select an appointment date', 'Choose today or a future date.');
+      showAlert({
+        title: 'Select an appointment date',
+        message: 'Choose today or a future date.',
+        type: 'warning',
+      });
       return;
     }
 
     if (!time || !selectedDoctor.availableTimes.includes(time)) {
-      Alert.alert('Select an appointment time', 'Choose one of the available times.');
+      showAlert({
+        title: 'Select an appointment time',
+        message: 'Choose one of the available times.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -139,88 +156,95 @@ export default function BookingScreen() {
 
       await saveAppointment(appointmentData);
 
-      Alert.alert(
-        'Appointment Booked!',
-        'Your appointment has been booked successfully.',
-        [{ text: 'OK', onPress: () => router.dismissTo('/(tabs)/doctors') }],
-      );
+      showAlert({
+        title: 'Appointment Booked!',
+        message: 'Your appointment has been booked successfully.',
+        type: 'success',
+        onConfirm: () => router.dismissTo('/(tabs)/doctors'),
+        confirmText: 'OK',
+      });
     } catch (error) {
       console.error('Failed to save appointment:', error);
-      Alert.alert('Unable to save appointment', 'Please try again.');
+      showAlert({
+        title: 'Unable to save appointment',
+        message: 'Please try again.',
+        type: 'error',
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <ScreenContainer inTabs>
-      <BookingPageHeading title="Book Appointment" />
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <ThemedText style={styles.cardEyebrow}>SELECTED CARE PROFESSIONAL</ThemedText>
-        <ThemedText style={styles.doctorName}>{selectedDoctor.name}</ThemedText>
-        <ThemedText themeColor="textSecondary">{selectedDoctor.specialty}</ThemedText>
-        <View style={styles.infoRows}>
-          <InfoRow label="Next listed slot" value={selectedDoctor.nextSlot} />
-          <InfoRow label="Times offered" value={`${selectedDoctor.availableTimes.length} options`} />
-        </View>
-      </ThemedView>
-
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <View style={styles.sectionHeading}>
-          <View style={styles.sectionHeadingText}>
-            <ThemedText style={styles.sectionTitle}>Choose a Date and Time</ThemedText>
+    <View style={{ flex: 1 }}>
+      <ScreenContainer inTabs>
+        <BookingPageHeading title="Book Appointment" />
+        <ThemedView type="backgroundElement" style={styles.card}>
+          <ThemedText style={styles.cardEyebrow}>SELECTED CARE PROFESSIONAL</ThemedText>
+          <ThemedText style={styles.doctorName}>{selectedDoctor.name}</ThemedText>
+          <ThemedText themeColor="textSecondary">{selectedDoctor.specialty}</ThemedText>
+          <View style={styles.infoRows}>
+            <InfoRow label="Next listed slot" value={selectedDoctor.nextSlot} />
+            <InfoRow label="Times offered" value={`${selectedDoctor.availableTimes.length} options`} />
           </View>
-        </View>
+        </ThemedView>
 
-        <Pressable
-          accessibilityLabel={date ? `Appointment date ${formatDateForDisplay(date)}` : 'Choose appointment date'}
-          accessibilityRole="button"
-          accessibilityState={{ selected: date !== null }}
-          onPress={() => setShowDatePicker(true)}
-          style={({ pressed }) => [
-            styles.dateButton,
-            { backgroundColor: date ? (isDark ? '#214b3a' : '#edf8ee') : cardColor, borderColor },
-            pressed && styles.pressed,
-          ]}>
-          <View style={styles.dateButtonText}>
-            <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>APPOINTMENT DATE</ThemedText>
-            <ThemedText type="smallBold">{date ? formatDateForDisplay(date) : 'Select a date'}</ThemedText>
+        <ThemedView type="backgroundElement" style={styles.card}>
+          <View style={styles.sectionHeading}>
+            <View style={styles.sectionHeadingText}>
+              <ThemedText style={styles.sectionTitle}>Choose a Date and Time</ThemedText>
+            </View>
           </View>
-          <ThemedText style={[styles.dateArrow, { color: accent }]}>›</ThemedText>
-        </Pressable>
 
-        {showDatePicker && (
-          <DateTimePicker
-            testID="datePicker"
-            value={date ?? minDate}
-            mode="date"
-            display="default"
-            minimumDate={minDate}
-            onChange={handleDateChange}
-          />
-        )}
+          <Pressable
+            accessibilityLabel={date ? `Appointment date ${formatDateForDisplay(date)}` : 'Choose appointment date'}
+            accessibilityRole="button"
+            accessibilityState={{ selected: date !== null }}
+            onPress={() => setShowDatePicker(true)}
+            style={({ pressed }) => [
+              styles.dateButton,
+              { backgroundColor: date ? (isDark ? '#214b3a' : '#edf8ee') : cardColor, borderColor },
+              pressed && styles.pressed,
+            ]}>
+            <View style={styles.dateButtonText}>
+              <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>APPOINTMENT DATE</ThemedText>
+              <ThemedText type="smallBold">{date ? formatDateForDisplay(date) : 'Select a date'}</ThemedText>
+            </View>
+            <ThemedText style={[styles.dateArrow, { color: accent }]}>›</ThemedText>
+          </Pressable>
 
-        <View style={styles.timeHeading}>
-          <ThemedText style={styles.fieldLabel}>AVAILABLE TIMES</ThemedText>
-        </View>
-        <View style={styles.timeSlots}>
-          {selectedDoctor.availableTimes.map(slot => {
-            const selected = time === slot;
-            return (
-              <Pressable
-                key={slot}
-                accessibilityLabel={`${formatTimeSlot(slot)}${selected ? ', selected' : ''}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                onPress={() => setTime(slot)}
-                style={({ pressed }) => [
-                  styles.timeSlot,
-                  {
-                    backgroundColor: selected ? accent : cardColor,
-                    borderColor: selected ? accent : borderColor,
-                  },
-                  pressed && styles.pressed,
-                ]}>
+          {showDatePicker && (
+            <DateTimePicker
+              testID="datePicker"
+              value={date ?? minDate}
+              mode="date"
+              display="default"
+              minimumDate={minDate}
+              onChange={handleDateChange}
+            />
+          )}
+
+          <View style={styles.timeHeading}>
+            <ThemedText style={styles.fieldLabel}>AVAILABLE TIMES</ThemedText>
+          </View>
+          <View style={styles.timeSlots}>
+            {selectedDoctor.availableTimes.map(slot => {
+              const selected = time === slot;
+              return (
+                <Pressable
+                  key={slot}
+                  accessibilityLabel={`${formatTimeSlot(slot)}${selected ? ', selected' : ''}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setTime(slot)}
+                  style={({ pressed }) => [
+                    styles.timeSlot,
+                    {
+                      backgroundColor: selected ? accent : cardColor,
+                      borderColor: selected ? accent : borderColor,
+                    },
+                    pressed && styles.pressed,
+                  ]}>
                 <ThemedText style={{ color: selected ? '#ffffff' : theme.text, fontWeight: '700' }}>
                   {formatTimeSlot(slot)}
                 </ThemedText>
@@ -230,22 +254,24 @@ export default function BookingScreen() {
         </View>
       </ThemedView>
 
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityLabel={isSaving ? 'Saving appointment' : 'Save appointment'}
-          accessibilityRole="button"
-          disabled={!date || !time || isSaving}
-          onPress={handleBookAppointment}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            { backgroundColor: accent },
-            (!date || !time || isSaving) && styles.disabledButton,
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText style={styles.primaryButtonText}>{isSaving ? 'SAVING…' : 'SAVE APPOINTMENT'}</ThemedText>
-        </Pressable>
-      </View>
-    </ScreenContainer>
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityLabel={isSaving ? 'Saving appointment' : 'Save appointment'}
+            accessibilityRole="button"
+            disabled={!date || !time || isSaving}
+            onPress={handleBookAppointment}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: accent },
+              (!date || !time || isSaving) && styles.disabledButton,
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText style={styles.primaryButtonText}>{isSaving ? 'SAVING…' : 'SAVE APPOINTMENT'}</ThemedText>
+          </Pressable>
+        </View>
+      </ScreenContainer>
+      <AlertComponent />
+    </View>
   );
 }
 
@@ -328,6 +354,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   sectionHeadingText: {
     flex: 1,

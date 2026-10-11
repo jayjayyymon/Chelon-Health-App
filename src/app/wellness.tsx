@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 
@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { useAlert } from '@/hooks/use-alert';
 
 export default function WellnessScreen() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function WellnessScreen() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [step, setStep] = useState<'form' | 'result'>('form');
   const [attemptedContinue, setAttemptedContinue] = useState(false);
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
 
   // Define the questionnaire
   const questions = [
@@ -95,7 +97,11 @@ export default function WellnessScreen() {
     }
 
     if (profileLoading) {
-      Alert.alert('Please wait', 'Your profile is still loading. Try submitting again in a moment.');
+      showAlert({
+        title: 'Please wait',
+        message: 'Your profile is still loading. Try submitting again in a moment.',
+        type: 'information',
+      });
       return;
     }
 
@@ -103,7 +109,11 @@ export default function WellnessScreen() {
     const wellnessStatus = moodOption?.label ?? 'Completed';
     const saved = await saveProfileToStorage({ ...profile, wellnessStatus });
     if (!saved) {
-      Alert.alert('Unable to save check-in', 'Please try again.');
+      showAlert({
+        title: 'Unable to save check-in',
+        message: 'Please try again.',
+        type: 'error',
+      });
       return;
     }
 
@@ -247,8 +257,9 @@ export default function WellnessScreen() {
 
   // Result step: show summary of answers with suggestions
   return (
-    <ScreenContainer subtitle="Here's your wellness reflection.">
-      <SectionCard title="Your Wellness Check-In">
+    <View style={{ flex: 1 }}>
+      <ScreenContainer subtitle="Here's your wellness reflection.">
+        <SectionCard title="Your Wellness Check-In">
         {/* Friendly header */}
         <ThemedText type="smallBold" style={styles.resultHeader}>
           Thanks for checking in! Here&apos;s what you shared:
@@ -295,8 +306,10 @@ export default function WellnessScreen() {
             router.replace('../(tabs)');
           }}
         />
-      </View>
-    </ScreenContainer>
+        </View>
+      </ScreenContainer>
+      <AlertComponent />
+    </View>
   );
 }
 

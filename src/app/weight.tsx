@@ -22,6 +22,7 @@ import {
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useAlert } from '@/hooks/use-alert';
 
 const accentGreen = NavigationColors.background;
 
@@ -36,6 +37,7 @@ export default function WeightScreen() {
   const [inputWeight, setInputWeight] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showInput, setShowInput] = useState(false);
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
 
   const latest = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
   const currentWeight = latest?.kg ?? null;
@@ -98,124 +100,132 @@ export default function WeightScreen() {
     setInputWeight('');
     setError(null);
     setShowInput(false);
+    showAlert({
+      title: 'Weight saved',
+      message: 'Your weight has been logged successfully.',
+      type: 'success',
+    });
   };
 
   return (
-    <ThemedView style={styles.root}>
-      <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: heroTint }]} />
-      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.content}>
-            <View style={styles.topBar}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                onPress={() => router.back()}
-                style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}>
-                <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
-              </Pressable>
-              <ThemedText style={[styles.wordmark, { color: inkColor }]}>weight tracker</ThemedText>
-              <View style={styles.topBarSpacer} />
-            </View>
-
-            <View style={styles.heading}>
-              <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
-              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>WEIGHT</ThemedText>
-            </View>
-
-            <TrackerMascot
-              accessibilityLabel="CHELON turtle standing on a weighing scale"
-              source={require('../../assets/icons/cutie-weight.png')}
-            />
-
-            <View style={[styles.summaryCard, { backgroundColor: panelGreen }]}>
-              <View style={[styles.bmiRow, { backgroundColor: tileColor }]}>
-                <ThemedText style={[styles.metricLabel, { color: mutedInk }]}>BMI</ThemedText>
-                <ThemedText style={[styles.bmiValue, { color: inkColor }]}>
-                  {bmi === null ? '--' : bmi.toFixed(2)}
-                </ThemedText>
-                <ThemedText style={[styles.bmiStatus, { backgroundColor: isDark ? '#397258' : '#63b789', color: panelText }]}>
-                  {bmiStatus.toUpperCase()}
-                </ThemedText>
-                <ThemedText style={[styles.metricArrow, { color: inkColor }]}>›</ThemedText>
+    <View style={{ flex: 1 }}>
+      <ThemedView style={styles.root}>
+        <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: heroTint }]} />
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.content}>
+              <View style={styles.topBar}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  onPress={() => router.back()}
+                  style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}>
+                  <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
+                </Pressable>
+                <ThemedText style={[styles.wordmark, { color: inkColor }]}>weight tracker</ThemedText>
+                <View style={styles.topBarSpacer} />
               </View>
 
-              <View style={styles.statsRow}>
-                <View style={[styles.statTile, { backgroundColor: tileColor }]}>
-                  <ThemedText style={[styles.statLabel, { color: mutedInk }]}>CURRENT</ThemedText>
-                  <View style={styles.valueRow}>
-                    <ThemedText style={[styles.statValue, { color: inkColor }]}>{currentWeight ?? '--'}</ThemedText>
-                    <ThemedText style={[styles.statUnit, { color: inkColor }]}>kg</ThemedText>
-                  </View>
-                </View>
-                <View style={[styles.statTile, { backgroundColor: tileColor }]}>
-                  <ThemedText style={[styles.statLabel, { color: mutedInk }]}>TARGET</ThemedText>
-                  <View style={styles.valueRow}>
-                    <ThemedText style={[styles.statValue, { color: inkColor }]}>{profile.goalWeightKg}</ThemedText>
-                    <ThemedText style={[styles.statUnit, { color: inkColor }]}>kg</ThemedText>
-                  </View>
-                </View>
+              <View style={styles.heading}>
+                <ThemedText style={[styles.date, { color: mutedInk }]}>{currentDate}</ThemedText>
+                <ThemedText style={[styles.headingTitle, { color: inkColor }]}>WEIGHT</ThemedText>
               </View>
 
-              {showInput ? (
-                <View style={styles.inputArea}>
-                  <TextInput
-                    accessibilityLabel="Weight in kilograms"
-                    autoFocus
-                    keyboardType="decimal-pad"
-                    onChangeText={handleWeightChange}
-                    placeholder="Enter weight in kg"
-                    placeholderTextColor={mutedInk}
-                    style={[styles.input, { backgroundColor: tileColor, borderColor, color: inkColor }]}
-                    value={inputWeight}
-                  />
-                  {error ? <ThemedText style={[styles.error, { color: '#ffd0d0' }]}>{error}</ThemedText> : null}
+              <TrackerMascot
+                accessibilityLabel="CHELON turtle standing on a weighing scale"
+                source={require('../../assets/icons/cutie-weight.png')}
+              />
+
+              <View style={[styles.summaryCard, { backgroundColor: panelGreen }]}>
+                <View style={[styles.bmiRow, { backgroundColor: tileColor }]}>
+                  <ThemedText style={[styles.metricLabel, { color: mutedInk }]}>BMI</ThemedText>
+                  <ThemedText style={[styles.bmiValue, { color: inkColor }]}>
+                    {bmi === null ? '--' : bmi.toFixed(2)}
+                  </ThemedText>
+                  <ThemedText style={[styles.bmiStatus, { backgroundColor: isDark ? '#397258' : '#63b789', color: panelText }]}>
+                    {bmiStatus.toUpperCase()}
+                  </ThemedText>
+                  <ThemedText style={[styles.metricArrow, { color: inkColor }]}>›</ThemedText>
+                </View>
+
+                <View style={styles.statsRow}>
+                  <View style={[styles.statTile, { backgroundColor: tileColor }]}>
+                    <ThemedText style={[styles.statLabel, { color: mutedInk }]}>CURRENT</ThemedText>
+                    <View style={styles.valueRow}>
+                      <ThemedText style={[styles.statValue, { color: inkColor }]}>{currentWeight ?? '--'}</ThemedText>
+                      <ThemedText style={[styles.statUnit, { color: inkColor }]}>kg</ThemedText>
+                    </View>
+                  </View>
+                  <View style={[styles.statTile, { backgroundColor: tileColor }]}>
+                    <ThemedText style={[styles.statLabel, { color: mutedInk }]}>TARGET</ThemedText>
+                    <View style={styles.valueRow}>
+                      <ThemedText style={[styles.statValue, { color: inkColor }]}>{profile.goalWeightKg}</ThemedText>
+                      <ThemedText style={[styles.statUnit, { color: inkColor }]}>kg</ThemedText>
+                    </View>
+                  </View>
+                </View>
+
+                {showInput ? (
+                  <View style={styles.inputArea}>
+                    <TextInput
+                      accessibilityLabel="Weight in kilograms"
+                      autoFocus
+                      keyboardType="decimal-pad"
+                      onChangeText={handleWeightChange}
+                      placeholder="Enter weight in kg"
+                      placeholderTextColor={mutedInk}
+                      style={[styles.input, { backgroundColor: tileColor, borderColor, color: inkColor }]}
+                      value={inputWeight}
+                    />
+                    {error ? <ThemedText style={[styles.error, { color: '#ffd0d0' }]}>{error}</ThemedText> : null}
+                    <TrackerActionButton
+                      accessibilityLabel="Save weight"
+                      backgroundColor={tileColor}
+                      color={inkColor}
+                      label="SAVE WEIGHT"
+                      onPress={handleLogWeight}
+                    />
+                  </View>
+                ) : (
                   <TrackerActionButton
-                    accessibilityLabel="Save weight"
+                    accessibilityLabel="Add weight"
                     backgroundColor={tileColor}
                     color={inkColor}
-                    label="SAVE WEIGHT"
-                    onPress={handleLogWeight}
+                    icon="＋"
+                    label="ADD WEIGHT"
+                    onPress={() => setShowInput(true)}
                   />
-                </View>
-              ) : (
-                <TrackerActionButton
-                  accessibilityLabel="Add weight"
-                  backgroundColor={tileColor}
-                  color={inkColor}
-                  icon="＋"
-                  label="ADD WEIGHT"
-                  onPress={() => setShowInput(true)}
-                />
-              )}
-            </View>
-
-            <View style={[styles.historyCard, { backgroundColor: theme.background, borderColor }]}>
-                <View>
-                  <ThemedText style={[styles.sectionTitle, { color: inkColor }]}>Weight history</ThemedText>
-                  <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>Your saved entries and trend</ThemedText>
-                </View>
-                <WeightChart
-                  height={180}
-                  lineColor={isDark ? '#8bd8c1' : '#2f9d77'}
-                  textColor={inkColor}
-                  width={chartWidth}
-                />
-                {weightHistory.length > 0 ? weightHistory.slice().reverse().map(entry => (
-                  <View key={entry.id} style={[styles.historyRow, { borderTopColor: borderColor }]}>
-                    <ThemedText style={[styles.historyDate, { color: mutedInk }]}>{entry.date}</ThemedText>
-                    <ThemedText style={[styles.historyValue, { color: inkColor }]}>{entry.kg.toFixed(1)} kg</ThemedText>
-                  </View>
-                )) : (
-                  <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>No weight entries yet.</ThemedText>
                 )}
               </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+
+              <View style={[styles.historyCard, { backgroundColor: theme.background, borderColor }]}>
+                  <View>
+                    <ThemedText style={[styles.sectionTitle, { color: inkColor }]}>Weight history</ThemedText>
+                    <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>Your saved entries and trend</ThemedText>
+                  </View>
+                  <WeightChart
+                    height={180}
+                    lineColor={isDark ? '#8bd8c1' : '#2f9d77'}
+                    textColor={inkColor}
+                    width={chartWidth}
+                  />
+                  {weightHistory.length > 0 ? weightHistory.slice().reverse().map(entry => (
+                    <View key={entry.id} style={[styles.historyRow, { borderTopColor: borderColor }]}>
+                      <ThemedText style={[styles.historyDate, { color: mutedInk }]}>{entry.date}</ThemedText>
+                      <ThemedText style={[styles.historyValue, { color: inkColor }]}>{entry.kg.toFixed(1)} kg</ThemedText>
+                    </View>
+                  )) : (
+                    <ThemedText style={[styles.sectionSubtitle, { color: mutedInk }]}>No weight entries yet.</ThemedText>
+                  )}
+                </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </ThemedView>
+      <AlertComponent />
+    </View>
   );
 }
 

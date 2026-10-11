@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -15,6 +16,8 @@ export default function ChelonHeader({
   onPress,
   style,
 }: ChelonHeaderProps) {
+  const router = useRouter();
+
   return (
     <View style={[styles.header, style]}>
       <View style={styles.wordmarkContainer}>
@@ -24,7 +27,7 @@ export default function ChelonHeader({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         hitSlop={8}
-        onPress={onPress}
+        onPress={onPress ?? (() => router.push('/settings'))}
         style={({ pressed }) => pressed && styles.settingsPressed}>
         <ThemedView type="backgroundElement" style={styles.settingsButton}>
           <ThemedText style={styles.settingsIcon}>⚙</ThemedText>

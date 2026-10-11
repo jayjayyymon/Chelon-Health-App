@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { NavigationColors, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { useAlert } from '@/hooks/use-alert';
 
 export default function EditGoalsScreen() {
   const { profile, loading, saveProfile: saveProfileToStorage } = useProfile();
@@ -30,6 +30,7 @@ export default function EditGoalsScreen() {
   const [sleepGoalHoursInput, setSleepGoalHoursInput] = useState(() => String(Math.floor(initialSleepMinutes / 60)));
   const [sleepGoalMinutesInput, setSleepGoalMinutesInput] = useState(() => String(initialSleepMinutes % 60));
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
 
   const panelGreen = isDark ? '#245c42' : NavigationColors.background;
   const pageBackground = isDark ? '#10291f' : '#f7fbf7';
@@ -76,13 +77,27 @@ export default function EditGoalsScreen() {
         dailySleepGoalHours: (Number(sleepGoalHoursInput) * 60 + Number(sleepGoalMinutesInput)) / 60,
       });
       if (saved) {
-        Alert.alert('Goals saved', 'Your daily targets have been updated.', [{ text: 'OK', onPress: () => router.back() }]);
+        showAlert({
+          title: 'Goals saved',
+          message: 'Your daily targets have been updated.',
+          type: 'success',
+          onConfirm: () => router.back(),
+          confirmText: 'OK',
+        });
       } else {
-        Alert.alert('Error', 'Failed to save goals. Please try again.');
+        showAlert({
+          title: 'Error',
+          message: 'Failed to save goals. Please try again.',
+          type: 'error',
+        });
       }
     } catch (error) {
       console.error('Failed to save goals:', error);
-      Alert.alert('Error', 'Failed to save goals. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to save goals. Please try again.',
+        type: 'error',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -93,8 +108,9 @@ export default function EditGoalsScreen() {
   }
 
   return (
-    <ThemedView style={[styles.root, { backgroundColor: pageBackground }]}>
-      <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
+    <View style={{ flex: 1 }}>
+      <ThemedView style={[styles.root, { backgroundColor: pageBackground }]}>
+        <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.content}>
@@ -136,7 +152,9 @@ export default function EditGoalsScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </ThemedView>
+      </ThemedView>
+      <AlertComponent />
+    </View>
   );
 }
 

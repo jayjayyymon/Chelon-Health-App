@@ -1,7 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -29,6 +28,7 @@ import { useHealthData } from '@/context/HealthDataContext';
 import { getLocalDateKey } from '@/utils/dietStorage';
 import { Appointment, getAppointments, removeAppointment } from '@/utils/appointmentStorage';
 import { useProfile } from '@/hooks/useProfile';
+import { useAlert } from '@/hooks/use-alert';
 
 const profileImage = require('../../../assets/images/profile-picture.jpg');
 
@@ -56,6 +56,8 @@ export default function ProfileScreen() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [selectedTracker, setSelectedTracker] = useState<TrackerKey>('calories');
+
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
 
   const loadAppointments = useCallback(async () => {
     setAppointmentsLoading(true);
@@ -110,6 +112,9 @@ export default function ProfileScreen() {
   const sleepGoal = Number.isFinite(profile.dailySleepGoalHours)
     ? `${profile.dailySleepGoalHours.toFixed(1)} hrs / night`
     : '--';
+  const primaryGoalLabel = profile.primaryHealthGoal
+    ? ({ improve_fitness: 'Improve fitness', maintain_weight: 'Maintain weight', lose_weight: 'Lose weight', gain_weight: 'Gain weight', improve_sleep: 'Improve sleep' } as const)[profile.primaryHealthGoal]
+    : 'Not set';
   const hasSummary = waterGlasses.length > 0 || todayMeals.length > 0 || latestSleep !== null || latestSteps !== null;
   const maxContentWidth = Math.min(MaxContentWidth, 520);
   const chartWidth = Math.max(180, Math.min(480, windowWidth - Spacing.three * 4));
@@ -119,286 +124,287 @@ export default function ProfileScreen() {
   const hasCalorieHistory = todayMeals.length > 0;
 
   const handleCancelAppointment = async (id: string) => {
-    Alert.alert(
-      'Cancel appointment?',
-      'Are you sure you want to cancel this appointment? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await removeAppointment(id);
-              await loadAppointments();
-            } catch (error) {
-              Alert.alert('Error cancelling appointment', 'Failed to cancel appointment. Please try again.');
-              console.error('Failed to cancel appointment:', error);
-            }
-          },
-        },
-      ],
-    );
+    showAlert({
+      title: 'Cancel appointment?',
+      message: 'Are you sure you want to cancel this appointment? This action cannot be undone.',
+      type: 'confirmation',
+      onConfirm: async () => {
+        try {
+          await removeAppointment(id);
+          await loadAppointments();
+        } catch (error) {
+          showAlert({
+            title: 'Error cancelling appointment',
+            message: 'Failed to cancel appointment. Please try again.',
+            type: 'error',
+          });
+          console.error('Failed to cancel appointment:', error);
+        }
+      },
+      cancelText: 'Cancel',
+      confirmText: 'Yes, cancel',
+    });
   };
 
   return (
-    <ThemedView style={styles.root}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
-        <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-          <View style={[styles.content, { maxWidth: maxContentWidth }]}>
-            <ChelonHeader
-              accessibilityLabel="Edit profile"
-              onPress={() => router.push('/edit-profile')}
-            />
+    <View style={{ flex: 1 }}>
+      <ThemedView style={styles.root}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+            <View style={[styles.content, { maxWidth: maxContentWidth }]}>
+              <ChelonHeader />
 
-            <View style={[styles.profileHero, { backgroundColor: panelGreen, shadowColor: softShadow }]}>
-              <Image
-                accessibilityLabel={`${name}'s profile picture`}
-                source={profileImage}
-                resizeMode="cover"
-                style={styles.profileImage}
-              />
-              <View style={styles.profileDetails}>
-                <ThemedText numberOfLines={1} style={styles.profileName}>
-                  {profileLoading ? 'Loading profile…' : name}
-                </ThemedText>
-                {!profileLoading && (
-                  <>
-                    <ThemedText style={styles.profileMeta}>{age} years old · {height}</ThemedText>
-                    <ThemedText style={styles.profileMeta}>Current weight: {currentWeight}</ThemedText>
-                  </>
-                )}
-                <Pressable
-                  accessibilityLabel="Edit profile"
-                  accessibilityRole="button"
-                  onPress={() => router.push('/edit-profile')}
-                  style={({ pressed }) => [styles.heroButton, pressed && styles.pressed]}>
-                  <ThemedText style={styles.heroButtonText}>EDIT PROFILE</ThemedText>
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={styles.sectionHeading}>
-              <ThemedText style={[styles.sectionLabel, { color: inkColor }]}>DAILY SUMMARY</ThemedText>
-              <View style={[styles.sectionRule, { backgroundColor: borderColor }]} />
-            </View>
-            <View style={[styles.summaryCard, { backgroundColor: summaryGreen, shadowColor: softShadow }]}>
-              {hasSummary ? (
-                <View style={styles.summaryGrid}>
-                  <SummaryMetric label="WATER" value={`${totalWaterL.toFixed(1)} L`} color={inkColor} mutedColor={mutedInk} />
-                  <SummaryMetric
-                    label="CALORIES"
-                    value={`${totalCalories.toLocaleString()} kcal`}
-                    color={inkColor}
-                    mutedColor={mutedInk}
-                  />
-                  <SummaryMetric
-                    label="SLEEP"
-                    value={latestSleep ? `${latestSleep.hours.toFixed(1)} hrs` : '--'}
-                    color={inkColor}
-                    mutedColor={mutedInk}
-                  />
-                  <SummaryMetric
-                    label="STEPS"
-                    value={latestSteps ? latestSteps.steps.toLocaleString() : '--'}
-                    color={inkColor}
-                    mutedColor={mutedInk}
-                  />
-                </View>
-              ) : (
-                <View style={styles.emptyState}>
-                  <EmptyStateIcon color={inkColor} />
-                  <ThemedText style={[styles.emptyTitle, { color: inkColor }]}>No Daily Summary Yet</ThemedText>
-                  <ThemedText style={[styles.emptySubtitle, { color: mutedInk }]}>Keep tracking your health activities to generate your daily summary.</ThemedText>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.sectionHeading}>
-              <ThemedText style={[styles.sectionLabel, { color: inkColor }]}>PROGRESS</ThemedText>
-              <View style={[styles.sectionRule, { backgroundColor: borderColor }]} />
-              <ThemedText style={[styles.calendarIcon, { color: panelGreen }]}>▣</ThemedText>
-            </View>
-            <View style={[styles.progressCard, { backgroundColor: progressGreen, shadowColor: softShadow }]}>
-              <ScrollView
-                contentContainerStyle={styles.trackerSelector}
-                horizontal
-                showsHorizontalScrollIndicator={false}>
-                {trackerOptions.map(option => {
-                  const isSelected = option.key === selectedTracker;
-                  return (
-                    <Pressable
-                      key={option.key}
-                      accessibilityLabel={`Show ${option.label.toLowerCase()} progress`}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: isSelected }}
-                      onPress={() => setSelectedTracker(option.key)}
-                      style={({ pressed }) => [
-                        styles.trackerTab,
-                        {
-                          backgroundColor: isSelected ? panelGreen : cardColor,
-                          borderColor: isSelected ? panelGreen : borderColor,
-                        },
-                        pressed && styles.pressed,
-                      ]}>
-                      <ThemedText style={[styles.trackerTabText, { color: isSelected ? '#ffffff' : inkColor }]}>
-                        {option.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              <View style={styles.chartHeader}>
-                <View style={styles.chartHeadingText}>
-                  <ThemedText style={[styles.chartTitle, { color: inkColor }]}>{selectedTrackerOption.label} progress</ThemedText>
-                  <ThemedText style={[styles.chartSubtitle, { color: mutedInk }]}>
-                    {selectedTracker === 'calories'
-                      ? 'Today\'s logged meals only'
-                      : selectedTracker === 'water'
-                        ? 'Current session intake'
-                        : `History shown in ${selectedTrackerOption.unit}`}
+              <View style={[styles.profileHero, { backgroundColor: panelGreen, shadowColor: softShadow }]}>
+                <Image
+                  accessibilityLabel={`${name}'s profile picture`}
+                  source={profileImage}
+                  resizeMode="cover"
+                  style={styles.profileImage}
+                />
+                <View style={styles.profileDetails}>
+                  <ThemedText numberOfLines={1} style={styles.profileName}>
+                    {profileLoading ? 'Loading profile…' : name}
                   </ThemedText>
+                  {!profileLoading && (
+                    <>
+                      <ThemedText style={styles.profileMeta}>{age} years old · {height}</ThemedText>
+                      <ThemedText style={styles.profileMeta}>Current weight: {currentWeight}</ThemedText>
+                    </>
+                  )}
+                  <Pressable
+                    accessibilityLabel="Edit profile"
+                    accessibilityRole="button"
+                    onPress={() => router.push('/edit-profile')}
+                    style={({ pressed }) => [styles.heroButton, pressed && styles.pressed]}>
+                    <ThemedText style={styles.heroButtonText}>EDIT PROFILE</ThemedText>
+                  </Pressable>
                 </View>
-                <ThemedText style={[styles.chartLatestValue, { color: inkColor }]}>
-                  {selectedTracker === 'calories'
-                    ? `${totalCalories.toLocaleString()} kcal`
-                    : selectedTracker === 'weight'
-                      ? currentWeight
-                      : selectedTracker === 'water'
-                        ? `${totalWaterL.toFixed(1)} L`
-                        : selectedTracker === 'sleep'
-                          ? latestSleep ? `${latestSleep.hours.toFixed(1)} hrs` : '--'
-                          : latestSteps ? latestSteps.steps.toLocaleString() : '--'}
-                </ThemedText>
               </View>
-              <View style={styles.chartFrame}>
-                {selectedTracker === 'calories' ? (
-                  <View style={styles.chartEmptyState}>
+
+              <View style={styles.sectionHeading}>
+                <ThemedText style={[styles.sectionLabel, { color: inkColor }]}>DAILY SUMMARY</ThemedText>
+                <View style={[styles.sectionRule, { backgroundColor: borderColor }]} />
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: summaryGreen, shadowColor: softShadow }]}>
+                {hasSummary ? (
+                  <View style={styles.summaryGrid}>
+                    <SummaryMetric label="WATER" value={`${totalWaterL.toFixed(1)} L`} color={inkColor} mutedColor={mutedInk} />
+                    <SummaryMetric
+                      label="CALORIES"
+                      value={`${totalCalories.toLocaleString()} kcal`}
+                      color={inkColor}
+                      mutedColor={mutedInk}
+                    />
+                    <SummaryMetric
+                      label="SLEEP"
+                      value={latestSleep ? `${latestSleep.hours.toFixed(1)} hrs` : '--'}
+                      color={inkColor}
+                      mutedColor={mutedInk}
+                    />
+                    <SummaryMetric
+                      label="STEPS"
+                      value={latestSteps ? latestSteps.steps.toLocaleString() : '--'}
+                      color={inkColor}
+                      mutedColor={mutedInk}
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.emptyState}>
                     <EmptyStateIcon color={inkColor} />
-                    <ThemedText style={[styles.chartEmptyTitle, { color: inkColor }]}>
-                      {hasCalorieHistory ? `${totalCalories.toLocaleString()} kcal logged today` : 'No calorie history yet'}
-                    </ThemedText>
-                    <ThemedText style={[styles.chartEmptySubtitle, { color: mutedInk }]}>
-                      {hasCalorieHistory ? 'Add meals from the Diet tracker to update this total.' : 'Log a meal to see today\'s calorie total here.'}
+                    <ThemedText style={[styles.emptyTitle, { color: inkColor }]}>No Daily Summary Yet</ThemedText>
+                    <ThemedText style={[styles.emptySubtitle, { color: mutedInk }]}>Keep tracking your health activities to generate your daily summary.</ThemedText>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.sectionHeading}>
+                <ThemedText style={[styles.sectionLabel, { color: inkColor }]}>PROGRESS</ThemedText>
+                <View style={[styles.sectionRule, { backgroundColor: borderColor }]} />
+                <ThemedText style={[styles.calendarIcon, { color: panelGreen }]}>▣</ThemedText>
+              </View>
+              <View style={[styles.progressCard, { backgroundColor: progressGreen, shadowColor: softShadow }]}>
+                <ScrollView
+                  contentContainerStyle={styles.trackerSelector}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}>
+                  {trackerOptions.map(option => {
+                    const isSelected = option.key === selectedTracker;
+                    return (
+                      <Pressable
+                        key={option.key}
+                        accessibilityLabel={`Show ${option.label.toLowerCase()} progress`}
+                        accessibilityRole="tab"
+                        accessibilityState={{ selected: isSelected }}
+                        onPress={() => setSelectedTracker(option.key)}
+                        style={({ pressed }) => [
+                          styles.trackerTab,
+                          {
+                            backgroundColor: isSelected ? panelGreen : cardColor,
+                            borderColor: isSelected ? panelGreen : borderColor,
+                          },
+                          pressed && styles.pressed,
+                        ]}>
+                        <ThemedText style={[styles.trackerTabText, { color: isSelected ? '#ffffff' : inkColor }]}>
+                          {option.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                <View style={styles.chartHeader}>
+                  <View style={styles.chartHeadingText}>
+                    <ThemedText style={[styles.chartTitle, { color: inkColor }]}>{selectedTrackerOption.label} progress</ThemedText>
+                    <ThemedText style={[styles.chartSubtitle, { color: mutedInk }]}>
+                      {selectedTracker === 'calories'
+                        ? 'Today\'s logged meals only'
+                        : selectedTracker === 'water'
+                          ? 'Current session intake'
+                          : `History shown in ${selectedTrackerOption.unit}`}
                     </ThemedText>
                   </View>
-                ) : selectedTracker === 'weight' ? (
-                  <WeightChart
-                    height={180}
-                    lineColor={chartLineColor}
-                    showLabel={false}
-                    showValue={false}
-                    textColor={chartTextColor}
-                    width={chartWidth}
-                  />
-                ) : selectedTracker === 'water' ? (
-                  <WaterChart
-                    height={180}
-                    lineColor={isDark ? '#75d7c2' : '#2f9d77'}
-                    showLabel={false}
-                    showValue={false}
-                    textColor={chartTextColor}
-                    width={chartWidth}
-                  />
-                ) : selectedTracker === 'sleep' ? (
-                  <SleepChart
-                    height={180}
-                    lineColor={isDark ? '#c7a6ff' : '#8554a8'}
-                    showLabel={false}
-                    showValue={false}
-                    textColor={chartTextColor}
-                    width={chartWidth}
-                  />
+                  <ThemedText style={[styles.chartLatestValue, { color: inkColor }]}>
+                    {selectedTracker === 'calories'
+                      ? `${totalCalories.toLocaleString()} kcal`
+                      : selectedTracker === 'weight'
+                        ? currentWeight
+                        : selectedTracker === 'water'
+                          ? `${totalWaterL.toFixed(1)} L`
+                          : selectedTracker === 'sleep'
+                            ? latestSleep ? `${latestSleep.hours.toFixed(1)} hrs` : '--'
+                            : latestSteps ? latestSteps.steps.toLocaleString() : '--'}
+                  </ThemedText>
+                </View>
+                <View style={styles.chartFrame}>
+                  {selectedTracker === 'calories' ? (
+                    <View style={styles.chartEmptyState}>
+                      <EmptyStateIcon color={inkColor} />
+                      <ThemedText style={[styles.chartEmptyTitle, { color: inkColor }]}>
+                        {hasCalorieHistory ? `${totalCalories.toLocaleString()} kcal logged today` : 'No calorie history yet'}
+                      </ThemedText>
+                      <ThemedText style={[styles.chartEmptySubtitle, { color: mutedInk }]}>
+                        {hasCalorieHistory ? 'Add meals from the Diet tracker to update this total.' : 'Log a meal to see today\'s calorie total here.'}
+                      </ThemedText>
+                    </View>
+                  ) : selectedTracker === 'weight' ? (
+                    <WeightChart
+                      height={180}
+                      lineColor={chartLineColor}
+                      showLabel={false}
+                      showValue={false}
+                      textColor={chartTextColor}
+                      width={chartWidth}
+                    />
+                  ) : selectedTracker === 'water' ? (
+                    <WaterChart
+                      height={180}
+                      lineColor={isDark ? '#75d7c2' : '#2f9d77'}
+                      showLabel={false}
+                      showValue={false}
+                      textColor={chartTextColor}
+                      width={chartWidth}
+                    />
+                  ) : selectedTracker === 'sleep' ? (
+                    <SleepChart
+                      height={180}
+                      lineColor={isDark ? '#c7a6ff' : '#8554a8'}
+                      showLabel={false}
+                      showValue={false}
+                      textColor={chartTextColor}
+                      width={chartWidth}
+                    />
+                  ) : (
+                    <StepsChart
+                      height={180}
+                      lineColor={chartLineColor}
+                      showLabel={false}
+                      showValue={false}
+                      textColor={chartTextColor}
+                      width={chartWidth}
+                    />
+                  )}
+                </View>
+              </View>
+
+              <View style={[styles.infoCard, { backgroundColor: cardColor, borderColor, shadowColor: softShadow }]}>
+                <View style={styles.cardHeadingRow}>
+                  <View style={styles.cardHeadingText}>
+                    <ThemedText style={[styles.cardTitle, { color: inkColor }]}>HEALTH GOALS</ThemedText>
+                    <ThemedText style={[styles.cardSubtitle, { color: mutedInk }]}>Your saved daily targets</ThemedText>
+                  </View>
+                  <Pressable
+                    accessibilityLabel="Edit goals"
+                    accessibilityRole="button"
+                    onPress={() => router.push('/edit-goals')}
+                    style={({ pressed }) => [styles.outlineButton, { borderColor: panelGreen }, pressed && styles.pressed]}>
+                    <ThemedText style={[styles.outlineButtonText, { color: panelGreen }]}>EDIT</ThemedText>
+                  </Pressable>
+                </View>
+                {profileLoading ? (
+                  <ThemedText style={{ color: mutedInk }}>Loading goals...</ThemedText>
                 ) : (
-                  <StepsChart
-                    height={180}
-                    lineColor={chartLineColor}
-                    showLabel={false}
-                    showValue={false}
-                    textColor={chartTextColor}
-                    width={chartWidth}
-                  />
+                  <View style={styles.goalRows}>
+                    <GoalRow label="Primary focus" value={primaryGoalLabel} color={inkColor} mutedColor={mutedInk} />
+                    <GoalRow label="Goal weight" value={goalWeight} color={inkColor} mutedColor={mutedInk} />
+                    <GoalRow label="Water" value={waterGoal} color={inkColor} mutedColor={mutedInk} />
+                    <GoalRow label="Steps" value={stepGoal} color={inkColor} mutedColor={mutedInk} />
+                    <GoalRow label="Calories" value={calorieGoal} color={inkColor} mutedColor={mutedInk} />
+                    <GoalRow label="Sleep" value={sleepGoal} color={inkColor} mutedColor={mutedInk} />
+                  </View>
+                )}
+              </View>
+
+              <View style={[styles.infoCard, { backgroundColor: cardColor, borderColor, shadowColor: softShadow }]}>
+                <View style={styles.cardHeadingRow}>
+                  <View style={styles.cardHeadingText}>
+                    <ThemedText style={[styles.cardTitle, { color: inkColor }]}>APPOINTMENTS</ThemedText>
+                    <ThemedText style={[styles.cardSubtitle, { color: mutedInk }]}>Your consultation schedule</ThemedText>
+                  </View>
+                  <Pressable
+                    accessibilityLabel="Browse doctors"
+                    accessibilityRole="button"
+                    onPress={() => router.push('/doctors')}
+                    style={({ pressed }) => [styles.outlineButton, { borderColor: panelGreen }, pressed && styles.pressed]}>
+                    <ThemedText style={[styles.outlineButtonText, { color: panelGreen }]}>BOOK</ThemedText>
+                  </Pressable>
+                </View>
+                {appointmentsLoading ? (
+                  <ThemedText style={{ color: mutedInk }}>Loading appointments...</ThemedText>
+                ) : appointments.length === 0 ? (
+                  <ThemedText style={[styles.emptyText, { color: mutedInk }]}>No upcoming appointments</ThemedText>
+                ) : (
+                  <View>
+                    {appointments.map((appointment, index) => (
+                      <View
+                        key={appointment.id}
+                        style={[
+                          styles.appointmentRow,
+                          index > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
+                        ]}>
+                        <View style={styles.appointmentDetails}>
+                          <ThemedText numberOfLines={1} style={[styles.appointmentDoctor, { color: inkColor }]}>{appointment.doctorName}</ThemedText>
+                          <ThemedText numberOfLines={1} style={[styles.appointmentSpecialty, { color: mutedInk }]}>{appointment.specialty}</ThemedText>
+                          <ThemedText style={[styles.appointmentDate, { color: inkColor }]}>{appointment.date} · {appointment.time}</ThemedText>
+                        </View>
+                        <Pressable
+                          accessibilityLabel={`Cancel appointment with ${appointment.doctorName}`}
+                          accessibilityRole="button"
+                          onPress={() => handleCancelAppointment(appointment.id)}
+                          style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
+                          <ThemedText style={styles.cancelText}>CANCEL</ThemedText>
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
                 )}
               </View>
             </View>
-
-            <View style={[styles.infoCard, { backgroundColor: cardColor, borderColor, shadowColor: softShadow }]}>
-              <View style={styles.cardHeadingRow}>
-                <View style={styles.cardHeadingText}>
-                  <ThemedText style={[styles.cardTitle, { color: inkColor }]}>HEALTH GOALS</ThemedText>
-                  <ThemedText style={[styles.cardSubtitle, { color: mutedInk }]}>Your saved daily targets</ThemedText>
-                </View>
-                <Pressable
-                  accessibilityLabel="Edit goals"
-                  accessibilityRole="button"
-                  onPress={() => router.push('/edit-goals')}
-                  style={({ pressed }) => [styles.outlineButton, { borderColor: panelGreen }, pressed && styles.pressed]}>
-                  <ThemedText style={[styles.outlineButtonText, { color: panelGreen }]}>EDIT</ThemedText>
-                </Pressable>
-              </View>
-              {profileLoading ? (
-                <ThemedText style={{ color: mutedInk }}>Loading goals...</ThemedText>
-              ) : (
-                <View style={styles.goalRows}>
-                  <GoalRow label="Goal weight" value={goalWeight} color={inkColor} mutedColor={mutedInk} />
-                  <GoalRow label="Water" value={waterGoal} color={inkColor} mutedColor={mutedInk} />
-                  <GoalRow label="Steps" value={stepGoal} color={inkColor} mutedColor={mutedInk} />
-                  <GoalRow label="Calories" value={calorieGoal} color={inkColor} mutedColor={mutedInk} />
-                  <GoalRow label="Sleep" value={sleepGoal} color={inkColor} mutedColor={mutedInk} />
-                </View>
-              )}
-            </View>
-
-            <View style={[styles.infoCard, { backgroundColor: cardColor, borderColor, shadowColor: softShadow }]}>
-              <View style={styles.cardHeadingRow}>
-                <View style={styles.cardHeadingText}>
-                  <ThemedText style={[styles.cardTitle, { color: inkColor }]}>APPOINTMENTS</ThemedText>
-                  <ThemedText style={[styles.cardSubtitle, { color: mutedInk }]}>Your consultation schedule</ThemedText>
-                </View>
-                <Pressable
-                  accessibilityLabel="Browse doctors"
-                  accessibilityRole="button"
-                  onPress={() => router.push('/doctors')}
-                  style={({ pressed }) => [styles.outlineButton, { borderColor: panelGreen }, pressed && styles.pressed]}>
-                  <ThemedText style={[styles.outlineButtonText, { color: panelGreen }]}>BOOK</ThemedText>
-                </Pressable>
-              </View>
-              {appointmentsLoading ? (
-                <ThemedText style={{ color: mutedInk }}>Loading appointments...</ThemedText>
-              ) : appointments.length === 0 ? (
-                <ThemedText style={[styles.emptyText, { color: mutedInk }]}>No upcoming appointments</ThemedText>
-              ) : (
-                <View>
-                  {appointments.map((appointment, index) => (
-                    <View
-                      key={appointment.id}
-                      style={[
-                        styles.appointmentRow,
-                        index > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
-                      ]}>
-                      <View style={styles.appointmentDetails}>
-                        <ThemedText numberOfLines={1} style={[styles.appointmentDoctor, { color: inkColor }]}>{appointment.doctorName}</ThemedText>
-                        <ThemedText numberOfLines={1} style={[styles.appointmentSpecialty, { color: mutedInk }]}>{appointment.specialty}</ThemedText>
-                        <ThemedText style={[styles.appointmentDate, { color: inkColor }]}>{appointment.date} · {appointment.time}</ThemedText>
-                      </View>
-                      <Pressable
-                        accessibilityLabel={`Cancel appointment with ${appointment.doctorName}`}
-                        accessibilityRole="button"
-                        onPress={() => handleCancelAppointment(appointment.id)}
-                        style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
-                        <ThemedText style={styles.cancelText}>CANCEL</ThemedText>
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-        </SafeAreaView>
-      </ScrollView>
-    </ThemedView>
+          </SafeAreaView>
+        </ScrollView>
+      </ThemedView>
+      <AlertComponent />
+    </View>
   );
 }
 

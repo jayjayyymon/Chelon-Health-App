@@ -23,7 +23,7 @@ export const TAB_ITEMS = [
     trigger: 'centers',
     href: '/health-centers',
     label: 'Centers',
-    icon: { ios: 'cross.case.fill', android: 'local_hospital', web: 'local_hospital' },
+    icon: { ios: 'map', android: 'map', web: 'map' },
   },
   {
     route: 'doctors',

@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +17,9 @@ import { ThemedView } from '@/components/themed-view';
 import { NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
+import { GENDER_OPTIONS, HEALTH_GOAL_OPTIONS, Gender, PrimaryHealthGoal } from '@/utils/profileStorage';
+import { validateAge, validateHeight, validateName, validateWeight } from '@/utils/profileValidation';
+import { useAlert } from '@/hooks/use-alert';
 
 export default function EditProfileScreen() {
   const { profile, loading, saveProfile: saveProfileToStorage } = useProfile();
@@ -25,11 +27,13 @@ export default function EditProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const isDark = useColorScheme() === 'dark';
   const [nameInput, setNameInput] = useState('');
+  const [ageInput, setAgeInput] = useState('');
   const [weightInput, setWeightInput] = useState('');
   const [heightInput, setHeightInput] = useState('');
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [weightError, setWeightError] = useState<string | null>(null);
-  const [heightError, setHeightError] = useState<string | null>(null);
+  const [gender, setGender] = useState<Gender | undefined>(profile.gender);
+  const [primaryGoal, setPrimaryGoal] = useState<PrimaryHealthGoal | undefined>(profile.primaryHealthGoal);
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
 
   const panelGreen = isDark ? '#245c42' : NavigationColors.background;
   const pageBackground = isDark ? '#10291f' : '#f7fbf7';
@@ -39,60 +43,47 @@ export default function EditProfileScreen() {
   const mutedInk = isDark ? '#c1d4ca' : '#607b70';
   const borderColor = isDark ? '#397258' : '#d9e7dc';
   const errorColor = isDark ? '#ffb4ab' : '#b3261e';
+  const colors = { fieldColor, borderColor, inkColor, mutedInk, errorColor };
+
+  const clearError = (key: string) => setErrors(previous => ({ ...previous, [key]: null }));
 
   const validateForm = () => {
-    let isValid = true;
-    const nameValue = nameInput.trim();
-    const trimmedWeight = weightInput.trim();
-    const trimmedHeight = heightInput.trim();
-
-    if (nameValue !== '' && nameValue.length < 2) {
-      setNameError('Name must be at least 2 characters.');
-      isValid = false;
-    } else {
-      setNameError(null);
-    }
-
-    if (trimmedWeight !== '' && (!/^\d+(?:\.\d+)?$/.test(trimmedWeight) || !Number.isFinite(Number(trimmedWeight)))) {
-      setWeightError('Enter a valid weight, such as 72.5 kg.');
-      isValid = false;
-    } else if (trimmedWeight !== '' && (Number(trimmedWeight) < 30 || Number(trimmedWeight) > 300)) {
-      setWeightError('Weight must be between 30 and 300 kg.');
-      isValid = false;
-    } else {
-      setWeightError(null);
-    }
-
-    if (trimmedHeight !== '' && (!/^\d+$/.test(trimmedHeight) || !Number.isFinite(Number(trimmedHeight)))) {
-      setHeightError('Enter height as a whole number in centimeters.');
-      isValid = false;
-    } else if (trimmedHeight !== '' && (Number(trimmedHeight) < 100 || Number(trimmedHeight) > 250)) {
-      setHeightError('Height must be between 100 and 250 cm.');
-      isValid = false;
-    } else {
-      setHeightError(null);
-    }
-
-    return isValid;
+    const nextErrors: Record<string, string | null> = {};
+    if (nameInput.trim() !== '') nextErrors.name = validateName(nameInput);
+    if (ageInput.trim() !== '') nextErrors.age = validateAge(ageInput).error;
+    if (weightInput.trim() !== '') nextErrors.weight = validateWeight(weightInput).error;
+    if (heightInput.trim() !== '') nextErrors.height = validateHeight(heightInput).error;
+    const filtered = Object.fromEntries(Object.entries(nextErrors).filter(([, value]) => value !== null));
+    setErrors(filtered);
+    return Object.keys(filtered).length === 0;
   };
 
   const handleSave = async () => {
     if (!validateForm()) return;
     setIsSaving(true);
     try {
-      const weightValue = weightInput.trim() === '' ? null : Number(weightInput.trim());
+      const weightValue = weightInput.trim() === '' ? null : validateWeight(weightInput).value;
+      const ageValue = ageInput.trim() === '' ? profile.age : validateAge(ageInput).value;
+      const heightValue = heightInput.trim() === '' ? profile.heightCm : validateHeight(heightInput).value;
+      if (ageValue === null || heightValue === null || (weightInput.trim() !== '' && weightValue === null)) return;
       const latestWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].kg : null;
       const saved = await saveProfileToStorage({
         ...profile,
         name: nameInput.trim() || profile.name,
-        heightCm: heightInput.trim() === '' ? profile.heightCm : Number(heightInput.trim()),
+        age: ageValue,
+        heightCm: heightValue,
+        ...(gender ? { gender } : { gender: undefined }),
+        ...(primaryGoal ? { primaryHealthGoal: primaryGoal } : { primaryHealthGoal: undefined }),
       });
 
       if (!saved) {
-        Alert.alert('Error', 'Failed to save profile. Please try again.');
+        showAlert({
+          title: 'Error',
+          message: 'Failed to save profile. Please try again.',
+          type: 'error',
+        });
         return;
       }
-
       if (weightValue !== null && latestWeight !== weightValue) {
         addWeight({
           id: `wt-${Date.now()}`,
@@ -100,84 +91,110 @@ export default function EditProfileScreen() {
           kg: weightValue,
         });
       }
-      Alert.alert('Profile saved', 'Your profile has been updated.', [{ text: 'OK', onPress: () => router.back() }]);
+      showAlert({
+        title: 'Profile saved',
+        message: 'Your profile has been updated.',
+        type: 'success',
+        onConfirm: () => router.back(),
+        confirmText: 'OK',
+      });
     } catch (error) {
       console.error('Failed to save profile:', error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      showAlert({
+        title: 'Error',
+        message: 'Failed to save profile. Please try again.',
+        type: 'error',
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (loading) {
-    return <ThemedView style={[styles.root, { backgroundColor: pageBackground }]}><ThemedText>Loading profile...</ThemedText></ThemedView>;
-  }
+  if (loading) return <ThemedView style={[styles.root, { backgroundColor: pageBackground }]}><ThemedText>Loading profile...</ThemedText></ThemedView>;
 
   const currentWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].kg : null;
+  const field = (label: string, value: string, onChangeText: (text: string) => void, key: string, keyboardType: 'default' | 'decimal-pad' | 'number-pad', placeholder: string, unit?: string) => (
+    <View style={styles.fieldGroup}>
+      <ThemedText style={[styles.fieldLabel, { color: colors.mutedInk }]}>{label}{unit ? ` (${unit})` : ''}</ThemedText>
+      <View style={[styles.inputWrap, { backgroundColor: colors.fieldColor, borderColor: errors[key] ? colors.errorColor : colors.borderColor }]}>
+        <TextInput
+          autoCapitalize={keyboardType === 'default' ? 'words' : 'none'}
+          keyboardType={keyboardType}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedInk}
+          style={[styles.input, { color: colors.inkColor }]}
+          value={value}
+        />
+        {unit ? <ThemedText style={[styles.unit, { color: colors.mutedInk }]}>{unit}</ThemedText> : null}
+      </View>
+      {errors[key] ? <ThemedText style={[styles.error, { color: colors.errorColor }]}>{errors[key]}</ThemedText> : null}
+    </View>
+  );
 
   return (
-    <ThemedView style={[styles.root, { backgroundColor: pageBackground }]}>
-      <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <View style={styles.content}>
-              <View style={styles.topBar}>
-                <Pressable accessibilityLabel="Go back" accessibilityRole="button" onPress={() => router.back()} style={[styles.backButton, { backgroundColor: cardColor, borderColor }]}>
-                  <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
-                </Pressable>
-                <View style={styles.heading}>
-                  <ThemedText style={[styles.eyebrow, { color: panelGreen }]}>CHELON PROFILE</ThemedText>
-                  <ThemedText style={[styles.title, { color: inkColor }]}>Edit Profile</ThemedText>
+    <View style={{ flex: 1 }}>
+      <ThemedView style={[styles.root, { backgroundColor: pageBackground }]}>
+        <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <View style={styles.content}>
+                <View style={styles.topBar}>
+                  <Pressable accessibilityLabel="Go back" accessibilityRole="button" onPress={() => router.back()} style={[styles.backButton, { backgroundColor: cardColor, borderColor }]}><ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText></Pressable>
+                  <View style={styles.heading}><ThemedText style={[styles.eyebrow, { color: panelGreen }]}>CHELON PROFILE</ThemedText><ThemedText style={[styles.title, { color: inkColor }]}>Edit Profile</ThemedText></View>
+                  <View style={styles.headerSpacer} />
                 </View>
-                <View style={styles.headerSpacer} />
+                <View style={[styles.card, { backgroundColor: cardColor, borderColor }]}>
+                  <ThemedText style={[styles.cardTitle, { color: inkColor }]}>Personal information</ThemedText>
+                  <ThemedText style={[styles.cardSubtitle, { color: mutedInk }]}>Keep your saved details up to date.</ThemedText>
+                  {field('NAME', nameInput, setNameInput, 'name', 'default', profile.name)}
+                  {field('AGE', ageInput, setAgeInput, 'age', 'number-pad', String(profile.age), 'years')}
+                  {field('CURRENT WEIGHT', weightInput, setWeightInput, 'weight', 'decimal-pad', currentWeight === null ? 'Not set' : String(currentWeight), 'kg')}
+                  {field('HEIGHT', heightInput, setHeightInput, 'height', 'number-pad', String(profile.heightCm), 'cm')}
+                  <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>GENDER (OPTIONAL)</ThemedText>
+                  <View style={styles.options}>{GENDER_OPTIONS.map(option => <OptionButton key={option.value} label={option.label} selected={gender === option.value} onPress={() => setGender(option.value)} colors={colors} />)}</View>
+                  <ThemedText style={[styles.fieldLabel, { color: mutedInk }]}>PRIMARY HEALTH GOAL</ThemedText>
+                  <View style={styles.options}>{HEALTH_GOAL_OPTIONS.map(option => <OptionButton key={option.value} label={option.label} selected={primaryGoal === option.value} onPress={() => setPrimaryGoal(option.value)} colors={colors} />)}</View>
+                </View>
+                <View style={styles.actions}>
+                  <Pressable accessibilityRole="button" onPress={() => router.back()} style={[styles.actionButton, styles.cancelButton, { borderColor, backgroundColor: cardColor }]}><ThemedText style={[styles.actionText, { color: inkColor }]}>CANCEL</ThemedText></Pressable>
+                  <Pressable accessibilityRole="button" disabled={isSaving} onPress={handleSave} style={[styles.actionButton, { backgroundColor: panelGreen, opacity: isSaving ? 0.6 : 1 }]}><ThemedText style={[styles.actionText, { color: '#ffffff' }]}>{isSaving ? 'SAVING…' : 'SAVE PROFILE'}</ThemedText></Pressable>
+                </View>
               </View>
-
-              <View style={[styles.card, { backgroundColor: cardColor, borderColor }]}>
-                <ThemedText style={[styles.cardTitle, { color: inkColor }]}>Personal information</ThemedText>
-                <ThemedText style={[styles.cardSubtitle, { color: mutedInk }]}>Keep your saved details up to date.</ThemedText>
-                <FormField label="NAME" value={nameInput} placeholder={profile.name} onChangeText={text => { setNameInput(text); setNameError(null); }} error={nameError} keyboardType="default" colors={{ fieldColor, borderColor, inkColor, mutedInk, errorColor }} />
-                <FormField label="CURRENT WEIGHT" unit="kg" value={weightInput} placeholder={currentWeight === null ? 'Not set' : String(currentWeight)} onChangeText={text => { setWeightInput(text); setWeightError(null); }} error={weightError} keyboardType="decimal-pad" colors={{ fieldColor, borderColor, inkColor, mutedInk, errorColor }} />
-                <FormField label="HEIGHT" unit="cm" value={heightInput} placeholder={String(profile.heightCm)} onChangeText={text => { setHeightInput(text); setHeightError(null); }} error={heightError} keyboardType="number-pad" colors={{ fieldColor, borderColor, inkColor, mutedInk, errorColor }} />
-              </View>
-
-              <View style={styles.actions}>
-                <Pressable accessibilityRole="button" onPress={() => router.back()} style={[styles.actionButton, styles.cancelButton, { borderColor, backgroundColor: cardColor }]}>
-                  <ThemedText style={[styles.actionText, { color: inkColor }]}>CANCEL</ThemedText>
-                </Pressable>
-                <Pressable accessibilityRole="button" disabled={isSaving} onPress={handleSave} style={[styles.actionButton, { backgroundColor: panelGreen, opacity: isSaving ? 0.6 : 1 }]}>
-                  <ThemedText style={[styles.actionText, { color: '#ffffff' }]}>{isSaving ? 'SAVING…' : 'SAVE PROFILE'}</ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ThemedView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </ThemedView>
+      <AlertComponent />
+    </View>
   );
 }
 
-type FormFieldProps = {
-  label: string;
-  unit?: string;
-  value: string;
-  placeholder: string;
-  error: string | null;
-  keyboardType: 'default' | 'decimal-pad' | 'number-pad';
-  onChangeText: (text: string) => void;
-  colors: { fieldColor: string; borderColor: string; inkColor: string; mutedInk: string; errorColor: string };
-};
-
+type FormFieldProps = { label: string; unit?: string; value: string; placeholder: string; error: string | null; keyboardType: 'default' | 'decimal-pad' | 'number-pad'; onChangeText: (text: string) => void; colors: { fieldColor: string; borderColor: string; inkColor: string; mutedInk: string; errorColor: string } };
 function FormField({ label, unit, value, placeholder, error, keyboardType, onChangeText, colors }: FormFieldProps) {
   return (
     <View style={styles.fieldGroup}>
       <ThemedText style={[styles.fieldLabel, { color: colors.mutedInk }]}>{label}{unit ? ` (${unit})` : ''}</ThemedText>
       <View style={[styles.inputWrap, { backgroundColor: colors.fieldColor, borderColor: error ? colors.errorColor : colors.borderColor }]}>
-        <TextInput autoCapitalize={keyboardType === 'default' ? 'words' : 'none'} keyboardType={keyboardType} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.mutedInk} style={[styles.input, { color: colors.inkColor }]} value={value} />
+        <TextInput
+          autoCapitalize={keyboardType === 'default' ? 'words' : 'none'}
+          keyboardType={keyboardType}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedInk}
+          style={[styles.input, { color: colors.inkColor }]}
+          value={value}
+        />
         {unit ? <ThemedText style={[styles.unit, { color: colors.mutedInk }]}>{unit}</ThemedText> : null}
       </View>
       {error ? <ThemedText style={[styles.error, { color: colors.errorColor }]}>{error}</ThemedText> : null}
     </View>
   );
+}
+
+type OptionProps = { label: string; selected: boolean; onPress: () => void; colors: { fieldColor: string; borderColor: string; inkColor: string } };
+function OptionButton({ label, selected, onPress, colors }: OptionProps) {
+  return <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={[styles.option, { backgroundColor: selected ? colors.fieldColor : 'transparent', borderColor: selected ? colors.inkColor : colors.borderColor }]}><ThemedText style={[styles.optionText, { color: colors.inkColor }]}>{label}</ThemedText></Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -201,6 +218,9 @@ const styles = StyleSheet.create({
   input: { flex: 1, minHeight: 48, fontSize: 16 },
   unit: { fontSize: 13, fontWeight: '700' },
   error: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
+  options: { gap: Spacing.two },
+  option: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 13 },
+  optionText: { fontSize: 14, lineHeight: 19, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: Spacing.two },
   actionButton: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 13, paddingHorizontal: Spacing.two },
   cancelButton: { borderWidth: 1 },

@@ -101,7 +101,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}>
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
           <View style={styles.content}>
-            <ChelonHeader onPress={() => {}} />
+            <ChelonHeader />
 
             <ThemedView type="backgroundElement" style={styles.greetingCard}>
               <View style={styles.greetingText}>
