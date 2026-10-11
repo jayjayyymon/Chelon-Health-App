@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '900',
     fontStyle: 'italic',
-    letterSpacing: -0.7,
+    letterSpacing: -0.3,
   },
   settingsButton: {
     width: 40,

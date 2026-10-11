@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Svg, Rect as SvgRect, Text as SvgText } from 'react-native-svg';
+import { StyleSheet, Text, View } from 'react-native';
+import { Rect as SvgRect, Svg, Text as SvgText } from 'react-native-svg';
+
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -8,99 +9,78 @@ type WaterChartProps = {
   width?: number;
   height?: number;
   showLabel?: boolean;
+  showValue?: boolean;
+  lineColor?: string;
+  textColor?: string;
 };
 
 export const WaterChart: React.FC<WaterChartProps> = ({
   width = 150,
   height = 100,
-  showLabel = true
+  showLabel = true,
+  showValue = true,
+  lineColor = '#4ECDC4',
+  textColor = '#333',
 }) => {
   const { waterGlasses } = useHealthData();
   const { profile } = useProfile();
-  const glasses = waterGlasses;
+  const safeWidth = Math.max(180, width);
+  const safeHeight = Math.max(120, height);
+  const padding = Math.min(24, Math.max(16, Math.floor(Math.min(safeWidth, safeHeight) / 6)));
+  const chartWidth = Math.max(1, safeWidth - padding * 2);
+  const chartHeight = Math.max(1, safeHeight - padding * 2);
 
-  if (glasses.length === 0) {
+  if (waterGlasses.length === 0) {
     return (
-      <View style={[styles.container, { width, height }]}>
-        <Text style={styles.noData}>No water data</Text>
+      <View style={[styles.container, { width: safeWidth, height: safeHeight }]}>
+        <Text style={[styles.noData, { color: textColor }]}>No water data yet</Text>
       </View>
     );
   }
 
-  const totalMl = glasses.reduce((sum, glass) => sum + glass.amountMl, 0);
-  const todayL = totalMl / 1000;
-  const goalL = profile.dailyWaterGoalL;
-
-  const padding = 20;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
-
-  const maxAmount = Math.max(...glasses.map(g => g.amountMl));
-  const barWidth = chartWidth / glasses.length * 0.6; // 60% of the slot, leaving 40% for gaps
-  const barSpacing = (chartWidth / glasses.length - barWidth) / 2;
+  const totalMl = waterGlasses.reduce((sum, glass) => sum + glass.amountMl, 0);
+  const goalMl = Math.max(profile.dailyWaterGoalL * 1000, 1);
+  const maxScale = Math.max(goalMl, ...waterGlasses.map(glass => glass.amountMl));
+  const slotWidth = chartWidth / waterGlasses.length;
+  const barWidth = Math.max(14, Math.min(38, slotWidth * 0.58));
+  const totalL = totalMl / 1000;
 
   return (
-    <View style={[styles.container, { width, height }]}>
-      {showLabel && (
-        <Text style={styles.chartTitle}>Water Intake Today</Text>
-      )}
-      <Svg width={width} height={height}>
-        {glasses.map((glass, index) => {
-          const barHeight = (glass.amountMl / maxAmount) * chartHeight;
-          const x = padding + index * (chartWidth / glasses.length) + barSpacing;
+    <View style={[styles.container, { width: safeWidth, height: safeHeight }]}>
+      {showLabel ? <Text style={[styles.chartTitle, { color: textColor }]}>Water intake</Text> : null}
+      <Svg width={safeWidth} height={safeHeight}>
+        <SvgRect x={padding} y={padding + chartHeight - 1} width={chartWidth} height={1} fill={textColor} opacity={0.35} />
+        {waterGlasses.map((glass, index) => {
+          const barHeight = Math.max(4, (glass.amountMl / maxScale) * chartHeight);
+          const x = padding + index * slotWidth + (slotWidth - barWidth) / 2;
           const y = padding + chartHeight - barHeight;
-
           return (
             <React.Fragment key={glass.id}>
-              <SvgRect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={barHeight}
-                fill="#4ECDC4"
-              />
-              {/* Optional: show amount on top of bar */}
-              {barHeight > 20 && (
-                <SvgText
-                  x={x + barWidth / 2}
-                  y={y - 5}
-                  textAnchor="middle"
-                  fill="#333"
-                  fontSize={10}
-                >
-                  {glass.amountMl}ml
-                </SvgText>
-              )}
+              <SvgRect x={x} y={y} width={barWidth} height={barHeight} rx={5} fill={lineColor} />
+              <SvgText
+                x={x + barWidth / 2}
+                y={Math.max(14, y - 10)}
+                textAnchor="middle"
+                fill={textColor}
+                fontSize={10}
+                fontWeight="700">
+                {glass.amountMl} ml
+              </SvgText>
             </React.Fragment>
           );
         })}
-        {/* Show total today */}
-        <SvgText
-          x={width - 10}
-          y={20}
-          textAnchor="end"
-          fill="#333"
-          fontSize={12}
-        >
-          {todayL.toFixed(1)}L / {goalL}L
-        </SvgText>
+        {showValue ? (
+          <SvgText x={safeWidth / 2} y={safeHeight - 3} textAnchor="middle" fill={textColor} fontSize={12}>
+            Total: {totalL.toFixed(1)} L / {profile.dailyWaterGoalL} L
+          </SvgText>
+        ) : null}
       </Svg>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-  },
-  chartTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  noData: {
-    fontSize: 14,
-    color: '#999',
-  },
+  container: { alignItems: 'center', justifyContent: 'center' },
+  chartTitle: { alignSelf: 'center', fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  noData: { fontSize: 14, textAlign: 'center' },
 });

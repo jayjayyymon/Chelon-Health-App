@@ -1,42 +1,229 @@
-import { InfoRow } from '@/components/info-row';
-import { PlaceholderButton } from '@/components/placeholder-button';
-import { ScreenContainer } from '@/components/screen-container';
-import { SectionCard } from '@/components/section-card';
-import { doctors } from '@/data/mock-data';
-import { Pressable, StyleSheet, View } from 'react-native';
 import { Link } from 'expo-router';
+import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+
+import { ScreenContainer } from '@/components/screen-container';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { NavigationColors, Spacing } from '@/constants/theme';
+import { doctors } from '@/data/mock-data';
+import { useTheme } from '@/hooks/use-theme';
+
+function getInitials(name: string) {
+  return name
+    .replace(/^Dr\.\s*/i, '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+}
 
 export default function DoctorsScreen() {
+  const theme = useTheme();
+  const isDark = useColorScheme() === 'dark';
+  const accent = isDark ? '#8bd8b0' : NavigationColors.background;
+  const cardColor = isDark ? '#17382e' : '#ffffff';
+  const borderColor = isDark ? '#397258' : '#d9e7dc';
+  const mutedColor = theme.textSecondary;
+
   return (
     <ScreenContainer
       inTabs
       title="Doctors"
-      subtitle="Select a doctor to book an appointment">
-      {doctors.map((doctor) => (
-        <Link
-          key={doctor.id}
-          href={`/book/${doctor.id}`}
-          asChild>
-          <Pressable style={styles.doctorCard}>
-            <SectionCard title={doctor.name}>
-              <View style={styles.content}>
-                <InfoRow label="Specialty" value={doctor.specialty} />
-                <InfoRow label="Next slot" value={doctor.nextSlot} />
-                <PlaceholderButton label="Select doctor" />
+      subtitle="Choose a care professional for a local consultation">
+      <View style={[styles.intro, { backgroundColor: isDark ? '#1b4633' : '#dff1df' }]}>
+        <ThemedText style={[styles.introEyebrow, { color: accent }]}>CARE TEAM</ThemedText>
+        <ThemedText style={styles.introTitle}>Find the right support for your wellbeing.</ThemedText>
+        <ThemedText style={[styles.introBody, { color: mutedColor }]}>
+          Browse the available mock care team and choose a time that works for you.
+        </ThemedText>
+      </View>
+
+      <View style={styles.listHeader}>
+        <ThemedText type="smallBold">Available care team</ThemedText>
+        <ThemedText themeColor="textSecondary" type="small">
+          {doctors.length} {doctors.length === 1 ? 'doctor' : 'doctors'}
+        </ThemedText>
+      </View>
+
+      {doctors.length === 0 ? (
+        <ThemedView type="backgroundElement" style={styles.emptyState}>
+          <ThemedText type="smallBold">No doctors available yet</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+            Please check back later for available consultation options.
+          </ThemedText>
+        </ThemedView>
+      ) : (
+        doctors.map(doctor => (
+          <Link key={doctor.id} href={`/book/${doctor.id}`} asChild>
+            <Pressable
+              accessibilityHint={`Open booking details for ${doctor.name}`}
+              accessibilityLabel={`${doctor.name}, ${doctor.specialty}. Next slot ${doctor.nextSlot}`}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.doctorCard,
+                { backgroundColor: cardColor, borderColor },
+                pressed && styles.pressed,
+              ]}>
+              <View style={styles.doctorHeader}>
+                <View style={[styles.avatar, { backgroundColor: isDark ? '#2f7655' : '#c5e7ce' }]}>
+                  <ThemedText style={[styles.avatarText, { color: isDark ? '#f1f7f2' : '#1d6044' }]}>
+                    {getInitials(doctor.name)}
+                  </ThemedText>
+                </View>
+                <View style={styles.doctorIdentity}>
+                  <ThemedText numberOfLines={1} style={styles.doctorName}>
+                    {doctor.name}
+                  </ThemedText>
+                  <ThemedText style={[styles.specialty, { color: mutedColor }]}>
+                    {doctor.specialty}
+                  </ThemedText>
+                </View>
+                <ThemedText style={[styles.chevron, { color: accent }]}>›</ThemedText>
               </View>
-            </SectionCard>
-          </Pressable>
-        </Link>
-      ))}
+
+              <View style={[styles.metaPanel, { backgroundColor: isDark ? '#214b3a' : '#f1f8f1' }]}>
+                <View style={styles.metaItem}>
+                  <ThemedText style={[styles.metaLabel, { color: mutedColor }]}>NEXT SLOT</ThemedText>
+                  <ThemedText type="smallBold">{doctor.nextSlot}</ThemedText>
+                </View>
+                <View style={[styles.metaDivider, { backgroundColor: borderColor }]} />
+                <View style={styles.metaItem}>
+                  <ThemedText style={[styles.metaLabel, { color: mutedColor }]}>TIMES</ThemedText>
+                  <ThemedText type="smallBold">{doctor.availableTimes.length} available</ThemedText>
+                </View>
+              </View>
+
+              <View style={[styles.action, { backgroundColor: accent }]}>
+                <ThemedText style={styles.actionText}>VIEW DETAILS & BOOK</ThemedText>
+              </View>
+            </Pressable>
+          </Link>
+        ))
+      )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  doctorCard: {
-    marginBottom: 16,
+  intro: {
+    gap: Spacing.one,
+    padding: Spacing.three,
+    borderRadius: 20,
   },
-  content: {
-    padding: 12,
+  introEyebrow: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  introTitle: {
+    maxWidth: 330,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
+  },
+  introBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.one,
+  },
+  doctorCard: {
+    gap: Spacing.three,
+    padding: Spacing.three,
+    borderWidth: 1,
+    borderRadius: 20,
+    elevation: 2,
+    shadowColor: '#173b2c',
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+  },
+  doctorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 26,
+  },
+  avatarText: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '900',
+  },
+  doctorIdentity: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one / 2,
+  },
+  doctorName: {
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '800',
+  },
+  specialty: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  chevron: {
+    fontSize: 28,
+    lineHeight: 30,
+    fontWeight: '400',
+  },
+  metaPanel: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    padding: Spacing.two,
+    borderRadius: 12,
+  },
+  metaItem: {
+    flex: 1,
+    gap: Spacing.one / 2,
+    minWidth: 0,
+  },
+  metaDivider: {
+    width: 1,
+    marginHorizontal: Spacing.two,
+  },
+  metaLabel: {
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+  },
+  action: {
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    borderRadius: 10,
+  },
+  actionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  emptyState: {
+    gap: Spacing.one,
+    padding: Spacing.three,
+    borderRadius: 16,
+  },
+  emptyBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  pressed: {
+    opacity: 0.72,
   },
 });

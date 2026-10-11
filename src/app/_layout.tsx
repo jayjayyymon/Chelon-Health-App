@@ -28,7 +28,11 @@ export default function RootLayout() {
             <Stack.Screen name="weight" options={{ headerShown: false }} />
             <Stack.Screen name="sleep" options={{ headerShown: false }} />
             <Stack.Screen name="steps" options={{ headerShown: false }} />
+            <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+            <Stack.Screen name="edit-goals" options={{ headerShown: false }} />
             <Stack.Screen name="wellness" options={{ title: 'Wellness' }} />
+            <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="book/confirmation" options={{ headerShown: false }} />
           </Stack>
         </HealthDataProvider>
       </ProfileProvider>
