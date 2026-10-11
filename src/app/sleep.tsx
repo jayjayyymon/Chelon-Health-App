@@ -12,9 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SleepIcon } from '@/components/icons/tracker-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TrackerActionButton } from '@/components/tracker-action-button';
+import {
+  TRACKER_HERO_BACKGROUND_HEIGHT,
+  TrackerMascot,
+} from '@/components/tracker-mascot';
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -188,9 +192,10 @@ export default function SleepScreen() {
               <ThemedText style={[styles.todayLabel, { color: inkColor }]}>TODAY&apos;S SLEEP</ThemedText>
             </View>
 
-            <View style={styles.artworkStage}>
-              <SleepIcon size={150} />
-            </View>
+            <TrackerMascot
+              accessibilityLabel="CHELON turtle sleeping"
+              source={require('../../assets/icons/cutie-sleep.png')}
+            />
           </View>
 
           <View style={[styles.summaryCard, { backgroundColor: accent }]}>
@@ -230,18 +235,14 @@ export default function SleepScreen() {
               </View>
             </View>
 
-            <Pressable
+            <TrackerActionButton
               accessibilityLabel="Save sleep data"
-              accessibilityRole="button"
+              backgroundColor={controlBackground}
+              color={inkColor}
+              icon="＋"
+              label="ADD SLEEP"
               onPress={handleSaveSleep}
-              style={({ pressed }) => [
-                styles.addButton,
-                { backgroundColor: controlBackground, opacity: pressed ? 0.82 : 1 },
-              ]}
-            >
-              <ThemedText style={[styles.addButtonIcon, { color: inkColor }]}>＋</ThemedText>
-              <ThemedText style={[styles.addButtonText, { color: inkColor }]}>ADD SLEEP</ThemedText>
-            </Pressable>
+            />
           </View>
 
           <View style={[styles.formCard, { backgroundColor: theme.background, borderColor }]}>
@@ -328,7 +329,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 300,
+    height: TRACKER_HERO_BACKGROUND_HEIGHT,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
   scrollContent: {
     flexGrow: 1,
@@ -342,7 +345,6 @@ const styles = StyleSheet.create({
     minWidth: 280,
   },
   hero: {
-    minHeight: 310,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
   },
@@ -384,6 +386,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
     marginTop: Spacing.two,
+    marginBottom: -60,
   },
   dateText: {
     fontSize: 13,
@@ -397,19 +400,14 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: 'center',
   },
-  artworkStage: {
-    alignItems: 'center',
-    height: 180,
-    justifyContent: 'center',
-    marginTop: Spacing.one,
-    zIndex: 2,
-  },
   summaryCard: {
     borderRadius: 25,
     elevation: 4,
-    marginTop: -78,
+    position: 'relative',
+    zIndex: 1,
+    marginTop: -50,
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.five,
+    paddingTop: 40,
     paddingBottom: Spacing.three,
     gap: Spacing.two,
     shadowColor: '#183B2C',
@@ -484,25 +482,6 @@ const styles = StyleSheet.create({
   statDetail: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  addButton: {
-    alignItems: 'center',
-    borderRadius: 13,
-    flexDirection: 'row',
-    gap: Spacing.two,
-    justifyContent: 'center',
-    minHeight: 46,
-    paddingHorizontal: Spacing.three,
-  },
-  addButtonIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 22,
-  },
-  addButtonText: {
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.4,
   },
   formCard: {
     borderRadius: 20,

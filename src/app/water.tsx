@@ -11,7 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WaterIcon } from '@/components/icons/tracker-icons';
+import { TrackerActionButton } from '@/components/tracker-action-button';
+import {
+  TRACKER_HERO_BACKGROUND_HEIGHT,
+  TrackerMascot,
+} from '@/components/tracker-mascot';
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -94,9 +98,10 @@ export default function WaterScreen() {
               <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S WATER INTAKE</ThemedText>
             </View>
 
-            <View style={styles.dropStage}>
-              <WaterIcon size={166} />
-            </View>
+            <TrackerMascot
+              accessibilityLabel="CHELON turtle drinking water"
+              source={require('../../assets/icons/cutie-water.png')}
+            />
 
             <View style={[styles.progressCard, { backgroundColor: panelGreen }]}>
               <View style={styles.progressHeader}>
@@ -130,18 +135,15 @@ export default function WaterScreen() {
                 </View>
               </View>
 
-              <Pressable
-                accessibilityRole="button"
+              <TrackerActionButton
                 accessibilityLabel={`Add ${Math.min(glassAmountMl, Math.max(0, goalMl - totalMl))} milliliters of water`}
+                backgroundColor={tileColor}
+                color={inkColor}
                 disabled={!canAddGlass}
+                icon="＋"
+                label="ADD WATER"
                 onPress={addGlass}
-                style={({ pressed }) => [
-                  styles.addButton,
-                  { backgroundColor: tileColor, opacity: canAddGlass ? (pressed ? 0.82 : 1) : 0.55 },
-                ]}>
-                <ThemedText style={[styles.addGlyph, { color: inkColor }]}>＋</ThemedText>
-                <ThemedText style={[styles.addButtonText, { color: inkColor }]}>ADD WATER</ThemedText>
-              </Pressable>
+              />
               <ThemedText style={[styles.addHint, { color: panelText }]}>Up to 250 ml per glass</ThemedText>
             </View>
 
@@ -204,7 +206,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 300,
+    height: TRACKER_HERO_BACKGROUND_HEIGHT,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
   scrollContent: {
     flexGrow: 1,
@@ -254,6 +258,7 @@ const styles = StyleSheet.create({
   heading: {
     alignItems: 'center',
     marginTop: Spacing.two,
+    marginBottom: -60,
     gap: Spacing.one,
   },
   date: {
@@ -268,23 +273,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.15,
     textAlign: 'center',
   },
-  dropStage: {
-    height: 137,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    transform: [{ translateY: 22 }],
-    zIndex: 2,
-    marginTop: Spacing.one,
-  },
   progressCard: {
     borderRadius: 25,
     position: 'relative',
     zIndex: 1,
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.five,
+    paddingTop: 40,
     paddingBottom: Spacing.three,
-    marginTop: -Spacing.four,
+    marginTop: -70,
     gap: Spacing.two,
     elevation: 4,
     shadowColor: '#183b2c',
@@ -358,25 +354,6 @@ const styles = StyleSheet.create({
   statDetail: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  addButton: {
-    minHeight: 46,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    borderRadius: 13,
-    paddingHorizontal: Spacing.three,
-  },
-  addGlyph: {
-    fontSize: 20,
-    lineHeight: 22,
-    fontWeight: '700',
-  },
-  addButtonText: {
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.4,
   },
   addHint: {
     fontSize: 11,

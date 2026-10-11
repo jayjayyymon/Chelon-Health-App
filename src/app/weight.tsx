@@ -12,9 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { WeightChart } from '@/components/charts/WeightChart';
-import { WeightIcon } from '@/components/icons/tracker-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TrackerActionButton } from '@/components/tracker-action-button';
+import {
+  TRACKER_HERO_BACKGROUND_HEIGHT,
+  TrackerMascot,
+} from '@/components/tracker-mascot';
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -121,9 +125,10 @@ export default function WeightScreen() {
               <ThemedText style={[styles.headingTitle, { color: inkColor }]}>WEIGHT</ThemedText>
             </View>
 
-            <View style={styles.artStage}>
-              <WeightIcon size={166} />
-            </View>
+            <TrackerMascot
+              accessibilityLabel="CHELON turtle standing on a weighing scale"
+              source={require('../../assets/icons/cutie-weight.png')}
+            />
 
             <View style={[styles.summaryCard, { backgroundColor: panelGreen }]}>
               <View style={[styles.bmiRow, { backgroundColor: tileColor }]}>
@@ -167,23 +172,23 @@ export default function WeightScreen() {
                     value={inputWeight}
                   />
                   {error ? <ThemedText style={[styles.error, { color: '#ffd0d0' }]}>{error}</ThemedText> : null}
-                  <Pressable
-                    accessibilityRole="button"
+                  <TrackerActionButton
                     accessibilityLabel="Save weight"
+                    backgroundColor={tileColor}
+                    color={inkColor}
+                    label="SAVE WEIGHT"
                     onPress={handleLogWeight}
-                    style={({ pressed }) => [styles.saveButton, { backgroundColor: tileColor }, pressed && styles.pressed]}>
-                    <ThemedText style={[styles.addButtonText, { color: inkColor }]}>SAVE WEIGHT</ThemedText>
-                  </Pressable>
+                  />
                 </View>
               ) : (
-                <Pressable
-                  accessibilityRole="button"
+                <TrackerActionButton
                   accessibilityLabel="Add weight"
+                  backgroundColor={tileColor}
+                  color={inkColor}
+                  icon="＋"
+                  label="ADD WEIGHT"
                   onPress={() => setShowInput(true)}
-                  style={({ pressed }) => [styles.addButton, { backgroundColor: tileColor, opacity: pressed ? 0.82 : 1 }]}>
-                  <ThemedText style={[styles.addGlyph, { color: inkColor }]}>⊞</ThemedText>
-                  <ThemedText style={[styles.addButtonText, { color: inkColor }]}>ADD WEIGHT</ThemedText>
-                </Pressable>
+                />
               )}
             </View>
 
@@ -217,7 +222,7 @@ export default function WeightScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1 },
-  heroBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: 300 },
+  heroBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: TRACKER_HERO_BACKGROUND_HEIGHT, borderBottomLeftRadius: 36, borderBottomRightRadius: 36 },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
@@ -243,24 +248,17 @@ const styles = StyleSheet.create({
   backGlyph: { fontSize: 36, lineHeight: 40, fontWeight: '700', marginTop: -4 },
   topBarSpacer: { width: 40 },
   wordmark: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', letterSpacing: -0.7 },
-  heading: { alignItems: 'center', marginTop: Spacing.two, gap: Spacing.one },
+  heading: { alignItems: 'center', marginTop: Spacing.two, marginBottom: -30, gap: Spacing.one },
   date: { fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
   headingTitle: { fontSize: 17, lineHeight: 23, fontWeight: '900', letterSpacing: 0.15 },
-  artStage: {
-    height: 137,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: 22 }],
-    zIndex: 2,
-    marginTop: Spacing.one,
-  },
   summaryCard: {
     borderRadius: 25,
+    position: 'relative',
     zIndex: 1,
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.five,
+    paddingTop: 40,
     paddingBottom: Spacing.three,
-    marginTop: -Spacing.four,
+    marginTop: -70,
     gap: Spacing.two,
     elevation: 4,
     shadowColor: '#183b2c',
@@ -299,12 +297,8 @@ const styles = StyleSheet.create({
   valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.one },
   statValue: { fontSize: 32, lineHeight: 39, fontWeight: '900' },
   statUnit: { fontSize: 13, fontWeight: '700' },
-  addButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, borderRadius: 13, paddingHorizontal: Spacing.three },
-  addGlyph: { fontSize: 20, lineHeight: 22, fontWeight: '700' },
-  addButtonText: { fontSize: 13, fontWeight: '900', letterSpacing: 0.4 },
   inputArea: { gap: Spacing.two },
   input: { minHeight: 44, borderWidth: 1, borderRadius: 13, paddingHorizontal: Spacing.three, fontSize: 16 },
-  saveButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 13 },
   error: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
   historyCard: { marginTop: Spacing.three, borderWidth: 1, borderRadius: 20, padding: Spacing.three, gap: Spacing.two },
   sectionTitle: { fontSize: 16, lineHeight: 22, fontWeight: '800' },

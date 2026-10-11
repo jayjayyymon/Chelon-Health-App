@@ -4,9 +4,13 @@ import { Pressable, ScrollView, StyleSheet, View, useColorScheme, useWindowDimen
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StepsChart } from '@/components/charts/StepsChart';
-import { StepsIcon } from '@/components/icons/tracker-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TrackerActionButton } from '@/components/tracker-action-button';
+import {
+  TRACKER_HERO_BACKGROUND_HEIGHT,
+  TrackerMascot,
+} from '@/components/tracker-mascot';
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -82,12 +86,14 @@ export default function StepsScreen() {
               <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S STEPS</ThemedText>
             </View>
 
-            <View style={styles.artStage}>
-              <StepsIcon size={166} />
-            </View>
+            <TrackerMascot
+              accessibilityLabel="CHELON turtle walking"
+              source={require('../../assets/icons/cutie-step.png')}
+            />
 
             <View style={[styles.summaryCard, { backgroundColor: panelGreen }]}>
               <View style={styles.progressHeader}>
+                <ThemedText style={[styles.progressLabel, { color: panelText }]}>DAILY PROGRESS</ThemedText>
                 <ThemedText style={[styles.progressLabel, { color: panelText }]}>{progress}%</ThemedText>
               </View>
               <View
@@ -121,16 +127,16 @@ export default function StepsScreen() {
                 </View>
               </View>
 
-              <Pressable
+              <TrackerActionButton
                 accessibilityLabel="Add 500 steps"
-                accessibilityRole="button"
                 accessibilityState={{ disabled: !canAddSteps }}
+                backgroundColor={controlBackground}
+                color={inkColor}
                 disabled={!canAddSteps}
+                icon="＋"
+                label={canAddSteps ? 'ADD STEP' : 'GOAL REACHED'}
                 onPress={addSteps}
-                style={({ pressed }) => [styles.addButton, { backgroundColor: controlBackground, opacity: canAddSteps ? (pressed ? 0.82 : 1) : 0.55 }]}>
-                <ThemedText style={[styles.addButtonIcon, { color: inkColor }]}>⊞</ThemedText>
-                <ThemedText style={[styles.addButtonText, { color: inkColor }]}>{canAddSteps ? 'ADD STEP' : 'GOAL REACHED'}</ThemedText>
-              </Pressable>
+              />
             </View>
 
             <View style={[styles.historyCard, { backgroundColor: theme.background, borderColor }]}>
@@ -191,7 +197,7 @@ function CompactMetric({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1 },
-  heroBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: 300 },
+  heroBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: TRACKER_HERO_BACKGROUND_HEIGHT, borderBottomLeftRadius: 36, borderBottomRightRadius: 36 },
   scrollContent: { flexGrow: 1, alignItems: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.five },
   content: { maxWidth: Math.min(MaxContentWidth, 520), minWidth: 280 },
   topBar: { height: 44, alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
@@ -199,12 +205,11 @@ const styles = StyleSheet.create({
   backGlyph: { fontSize: 36, fontWeight: '700', lineHeight: 40, marginTop: -4 },
   topBarSpacer: { height: 40, width: 40 },
   wordmark: { fontSize: 18, fontStyle: 'italic', fontWeight: '900', letterSpacing: -0.7, textTransform: 'lowercase' },
-  heading: { alignItems: 'center', gap: Spacing.one, marginTop: Spacing.two },
+  heading: { alignItems: 'center', gap: Spacing.one, marginTop: Spacing.two, marginBottom: -45 },
   date: { fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
   headingTitle: { fontSize: 17, fontWeight: '900', letterSpacing: 0.15, lineHeight: 23, textAlign: 'center' },
-  artStage: { alignItems: 'center', height: 180, justifyContent: 'center', marginTop: Spacing.one, zIndex: 2 },
-  summaryCard: { borderRadius: 25, elevation: 4, marginTop: -78, paddingBottom: Spacing.three, paddingHorizontal: Spacing.three, paddingTop: Spacing.five, gap: Spacing.two, shadowColor: '#183B2D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 9 },
-  progressHeader: { alignItems: 'flex-end', minHeight: 15 },
+  summaryCard: { borderRadius: 25, elevation: 4, position: 'relative', zIndex: 1, marginTop: -40, paddingBottom: Spacing.three, paddingHorizontal: Spacing.three, paddingTop: 40, gap: Spacing.two, shadowColor: '#183B2D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 9 },
+  progressHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 15 },
   progressLabel: { fontSize: 11, fontWeight: '800' },
   progressTrack: { backgroundColor: 'rgba(255,255,255,0.94)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 9, borderWidth: 2, height: 15, overflow: 'hidden' },
   progressFill: { backgroundColor: '#A9E5BC', borderRadius: 7, height: '100%' },
@@ -219,9 +224,6 @@ const styles = StyleSheet.create({
   statValueRow: { alignItems: 'baseline', flexDirection: 'row', gap: Spacing.one },
   statValue: { fontSize: 32, fontWeight: '900', lineHeight: 39 },
   statUnit: { fontSize: 13, fontWeight: '700' },
-  addButton: { alignItems: 'center', borderRadius: 13, flexDirection: 'row', gap: Spacing.two, justifyContent: 'center', minHeight: 46, paddingHorizontal: Spacing.three },
-  addButtonIcon: { fontSize: 20, fontWeight: '700', lineHeight: 22 },
-  addButtonText: { fontSize: 13, fontWeight: '900', letterSpacing: 0.4 },
   historyCard: { borderRadius: 20, borderWidth: 1, gap: Spacing.two, marginTop: Spacing.three, padding: Spacing.three },
   sectionTitle: { fontSize: 16, fontWeight: '800', lineHeight: 22 },
   sectionSubtitle: { fontSize: 12, lineHeight: 18 },

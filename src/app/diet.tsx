@@ -11,13 +11,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DietIcon } from '@/components/icons/tracker-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TrackerActionButton } from '@/components/tracker-action-button';
+import {
+  TRACKER_HERO_BACKGROUND_HEIGHT,
+  TrackerMascot,
+} from '@/components/tracker-mascot';
 import { Colors, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
 import { useHealthData, type DietMeal } from '@/context/HealthDataContext';
-import { getLocalDateKey } from '@/utils/dietStorage';
 import { useProfile } from '@/hooks/useProfile';
+import { getLocalDateKey } from '@/utils/dietStorage';
 
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Custom'] as const;
 const accentGreen = NavigationColors.background;
@@ -143,9 +147,10 @@ export default function DietScreen() {
               <ThemedText style={[styles.headingTitle, { color: inkColor }]}>TODAY&apos;S CALORIE INTAKE</ThemedText>
             </View>
 
-            <View style={styles.iconStage}>
-              <DietIcon size={166} />
-            </View>
+            <TrackerMascot
+              accessibilityLabel="CHELON turtle eating a healthy meal"
+              source={require('../../assets/icons/cutie-calorie.png')}
+            />
 
             <View style={[styles.progressCard, { backgroundColor: panelGreen }]}>
               <View style={styles.progressHeader}>
@@ -225,13 +230,14 @@ export default function DietScreen() {
                 style={[styles.input, { color: inkColor, backgroundColor: controlColor, borderColor }]}
               />
               {error && <ThemedText style={[styles.errorText, { color: isDark ? '#ffb4ab' : '#b3261e' }]}>{error}</ThemedText>}
-              <Pressable
-                accessibilityRole="button"
+              <TrackerActionButton
                 accessibilityLabel={editingId ? 'Save meal changes' : 'Add meal'}
+                backgroundColor={panelGreen}
+                color={panelText}
+                icon="＋"
+                label={editingId ? 'SAVE CHANGES' : 'ADD MEAL'}
                 onPress={handleSaveMeal}
-                style={({ pressed }) => [styles.primaryButton, { backgroundColor: panelGreen, opacity: pressed ? 0.8 : 1 }]}>
-                <ThemedText style={[styles.primaryButtonText, { color: panelText }]}>{editingId ? 'SAVE CHANGES' : 'ADD MEAL'}</ThemedText>
-              </Pressable>
+              />
             </View>
 
             <View style={[styles.recentCard, { backgroundColor: theme.background, borderColor }]}>
@@ -283,7 +289,7 @@ export default function DietScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1 },
-  heroBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: 300 },
+  heroBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: TRACKER_HERO_BACKGROUND_HEIGHT, borderBottomLeftRadius: 36, borderBottomRightRadius: 36 },
   scrollContent: { flexGrow: 1, alignItems: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.five },
   content: { width: '100%', maxWidth: Math.min(MaxContentWidth, 520) },
   topBar: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -291,11 +297,10 @@ const styles = StyleSheet.create({
   backGlyph: { fontSize: 36, lineHeight: 40, fontWeight: '700', marginTop: -4 },
   wordmark: { fontSize: 18, fontWeight: '900', fontStyle: 'italic', letterSpacing: -0.7 },
   topBarSpacer: { width: 40 },
-  heading: { alignItems: 'center', marginTop: Spacing.two, gap: Spacing.one },
+  heading: { alignItems: 'center', marginTop: Spacing.two, marginBottom: -45, gap: Spacing.one },
   date: { fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
   headingTitle: { fontSize: 17, lineHeight: 23, fontWeight: '900', letterSpacing: 0.15, textAlign: 'center' },
-  iconStage: { height: 137, alignItems: 'center', justifyContent: 'center', position: 'relative', transform: [{ translateY: 22 }], zIndex: 2, marginTop: Spacing.one },
-  progressCard: { borderRadius: 25, position: 'relative', zIndex: 1, paddingHorizontal: Spacing.three, paddingTop: Spacing.five, paddingBottom: Spacing.three, marginTop: -Spacing.four, gap: Spacing.two, elevation: 4, shadowColor: '#183b2c', shadowOpacity: 0.18, shadowRadius: 9, shadowOffset: { width: 0, height: 4 } },
+  progressCard: { borderRadius: 25, position: 'relative', zIndex: 1, paddingHorizontal: Spacing.three, paddingTop: 40, paddingBottom: Spacing.three, marginTop: -60, gap: Spacing.two, elevation: 4, shadowColor: '#183b2c', shadowOpacity: 0.18, shadowRadius: 9, shadowOffset: { width: 0, height: 4 } },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   progressLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
   progressPercent: { fontSize: 13, fontWeight: '800' },
@@ -319,8 +324,6 @@ const styles = StyleSheet.create({
   mealTypeButton: { minHeight: 34, justifyContent: 'center', borderWidth: 1, borderRadius: 10, paddingHorizontal: Spacing.two },
   mealTypeText: { fontSize: 12, fontWeight: '700' },
   errorText: { fontSize: 12, lineHeight: 17, fontWeight: '600' },
-  primaryButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 13, marginTop: Spacing.one },
-  primaryButtonText: { fontSize: 13, fontWeight: '900', letterSpacing: 0.4 },
   recentCard: { marginTop: Spacing.three, borderWidth: 1, borderRadius: 20, padding: Spacing.three, gap: Spacing.two },
   mealRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two, gap: Spacing.two },
   mealRowText: { flex: 1, minWidth: 0 },
