@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
+import ChelonHeader from '@/components/chelon-header';
 import { ScreenContainer } from '@/components/screen-container';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -28,15 +29,13 @@ export default function DoctorsScreen() {
   const mutedColor = theme.textSecondary;
 
   return (
-    <ScreenContainer
-      inTabs
-      title="Doctors"
-      subtitle="Choose a care professional for a local consultation">
+    <ScreenContainer inTabs>
+      <ChelonHeader />
       <View style={[styles.intro, { backgroundColor: isDark ? '#1b4633' : '#dff1df' }]}>
         <ThemedText style={[styles.introEyebrow, { color: accent }]}>CARE TEAM</ThemedText>
         <ThemedText style={styles.introTitle}>Find the right support for your wellbeing.</ThemedText>
         <ThemedText style={[styles.introBody, { color: mutedColor }]}>
-          Browse the available mock care team and choose a time that works for you.
+          Browse the available care team and choose a time that works for you.
         </ThemedText>
       </View>
 
@@ -55,18 +54,19 @@ export default function DoctorsScreen() {
           </ThemedText>
         </ThemedView>
       ) : (
-        doctors.map(doctor => (
-          <Link key={doctor.id} href={`/book/${doctor.id}`} asChild>
-            <Pressable
-              accessibilityHint={`Open booking details for ${doctor.name}`}
-              accessibilityLabel={`${doctor.name}, ${doctor.specialty}. Next slot ${doctor.nextSlot}`}
-              accessibilityRole="button"
-              style={({ pressed }) => [
-                styles.doctorCard,
-                { backgroundColor: cardColor, borderColor },
-                pressed && styles.pressed,
-              ]}>
-              <View style={styles.doctorHeader}>
+        <View style={styles.doctorList}>
+          {doctors.map(doctor => (
+            <View
+              key={doctor.id}
+              style={[styles.doctorCard, { backgroundColor: cardColor, borderColor }]}>
+              <Link href={`/book/${doctor.id}`} asChild>
+                <Pressable
+                  accessibilityHint={`Open booking details for ${doctor.name}`}
+                  accessibilityLabel={`${doctor.name}, ${doctor.specialty}. Next slot ${doctor.nextSlot}`}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [pressed && styles.pressed]}>
+                  <View style={styles.doctorContent}>
+                    <View style={styles.doctorHeader}>
                 <View style={[styles.avatar, { backgroundColor: isDark ? '#2f7655' : '#c5e7ce' }]}>
                   <ThemedText style={[styles.avatarText, { color: isDark ? '#f1f7f2' : '#1d6044' }]}>
                     {getInitials(doctor.name)}
@@ -95,12 +95,15 @@ export default function DoctorsScreen() {
                 </View>
               </View>
 
-              <View style={[styles.action, { backgroundColor: accent }]}>
-                <ThemedText style={styles.actionText}>VIEW DETAILS & BOOK</ThemedText>
-              </View>
-            </Pressable>
-          </Link>
-        ))
+                    <View style={[styles.action, { backgroundColor: accent }]}>
+                      <ThemedText style={styles.actionText}>VIEW DETAILS & BOOK</ThemedText>
+                    </View>
+                  </View>
+                </Pressable>
+              </Link>
+            </View>
+          ))}
+        </View>
       )}
     </ScreenContainer>
   );
@@ -134,16 +137,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.one,
   },
+  doctorList: {
+    alignSelf: 'stretch',
+    marginTop: Spacing.two,
+    marginHorizontal: -8,
+    marginBottom: Spacing.four,
+    paddingTop: 16,
+    paddingBottom: 100,
+  },
   doctorCard: {
-    gap: Spacing.three,
-    padding: Spacing.three,
+    alignSelf: 'stretch',
+    width: '100%',
+    marginBottom: 16,
+    padding: 20,
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 16,
     elevation: 2,
     shadowColor: '#173b2c',
     shadowOffset: { width: 1, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
+  },
+  doctorContent: {
+    gap: 12,
   },
   doctorHeader: {
     flexDirection: 'row',
@@ -165,7 +181,7 @@ const styles = StyleSheet.create({
   doctorIdentity: {
     flex: 1,
     minWidth: 0,
-    gap: Spacing.one / 2,
+    gap: 10,
   },
   doctorName: {
     fontSize: 18,
@@ -189,7 +205,7 @@ const styles = StyleSheet.create({
   },
   metaItem: {
     flex: 1,
-    gap: Spacing.one / 2,
+    gap: 10,
     minWidth: 0,
   },
   metaDivider: {

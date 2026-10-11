@@ -28,15 +28,39 @@ const formatDateForDisplay = (date: Date) =>
   });
 
 function BackToDoctorsButton() {
+  const theme = useTheme();
+
   return (
     <Link href="/(tabs)/doctors" asChild>
       <Pressable
+        accessibilityHint="Return to the Doctors list"
         accessibilityLabel="Back to Doctors"
         accessibilityRole="button"
-        style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
-        <ThemedText type="smallBold">Back to Doctors</ThemedText>
+        hitSlop={8}
+        style={({ pressed }) => [
+          styles.roundButton,
+          { backgroundColor: theme.backgroundElement },
+          pressed && styles.pressed,
+        ]}>
+        <ThemedText style={[styles.backGlyph, { color: theme.text }]}>‹</ThemedText>
       </Pressable>
     </Link>
+  );
+}
+
+function BookingPageHeading({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <View style={styles.pageHeading}>
+      <View style={styles.topBar}>
+        <BackToDoctorsButton />
+        <ThemedText style={styles.wordmark}>doctor booking</ThemedText>
+        <View style={styles.topBarSpacer} />
+      </View>
+      <View style={styles.pageHeadingCopy}>
+        {subtitle ? <ThemedText themeColor="textSecondary" style={styles.headingSubtitle}>{subtitle}</ThemedText> : null}
+        <ThemedText style={styles.pageTitle}>{title}</ThemedText>
+      </View>
+    </View>
   );
 }
 
@@ -58,10 +82,10 @@ export default function BookingScreen() {
   // Handle missing or invalid ID gracefully.
   if (!id) {
     return (
-      <ScreenContainer inTabs title="Doctor not found" subtitle="Invalid doctor selection">
+      <ScreenContainer inTabs>
+        <BookingPageHeading title="Doctor not found" subtitle="Invalid doctor selection" />
         <ThemedView type="backgroundElement" style={styles.errorCard}>
           <ThemedText>Please select a valid doctor from the Doctors section.</ThemedText>
-          <BackToDoctorsButton />
         </ThemedView>
       </ScreenContainer>
     );
@@ -69,10 +93,10 @@ export default function BookingScreen() {
 
   if (!selectedDoctor) {
     return (
-      <ScreenContainer inTabs title="Doctor not found">
+      <ScreenContainer inTabs>
+        <BookingPageHeading title="Doctor not found" />
         <ThemedView type="backgroundElement" style={styles.errorCard}>
           <ThemedText>We could not find that doctor. Please choose someone from the list.</ThemedText>
-          <BackToDoctorsButton />
         </ThemedView>
       </ScreenContainer>
     );
@@ -115,14 +139,11 @@ export default function BookingScreen() {
 
       await saveAppointment(appointmentData);
 
-      const queryString = new URLSearchParams({
-        doctorName: selectedDoctor.name,
-        specialty: selectedDoctor.specialty,
-        date: dateString,
-        time: timeLabel,
-      }).toString();
-
-      router.push(`/book/confirmation?${queryString}`);
+      Alert.alert(
+        'Appointment Booked!',
+        'Your appointment has been booked successfully.',
+        [{ text: 'OK', onPress: () => router.dismissTo('/(tabs)/doctors') }],
+      );
     } catch (error) {
       console.error('Failed to save appointment:', error);
       Alert.alert('Unable to save appointment', 'Please try again.');
@@ -132,7 +153,8 @@ export default function BookingScreen() {
   };
 
   return (
-    <ScreenContainer inTabs title="Book a consultation" subtitle={selectedDoctor.name}>
+    <ScreenContainer inTabs>
+      <BookingPageHeading title="Book Appointment" />
       <ThemedView type="backgroundElement" style={styles.card}>
         <ThemedText style={styles.cardEyebrow}>SELECTED CARE PROFESSIONAL</ThemedText>
         <ThemedText style={styles.doctorName}>{selectedDoctor.name}</ThemedText>
@@ -146,10 +168,7 @@ export default function BookingScreen() {
       <ThemedView type="backgroundElement" style={styles.card}>
         <View style={styles.sectionHeading}>
           <View style={styles.sectionHeadingText}>
-            <ThemedText style={styles.sectionTitle}>Choose a date and time</ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.sectionHint}>
-              Select from the mock times shown below.
-            </ThemedText>
+            <ThemedText style={styles.sectionTitle}>Choose a Date and Time</ThemedText>
           </View>
         </View>
 
@@ -183,7 +202,6 @@ export default function BookingScreen() {
 
         <View style={styles.timeHeading}>
           <ThemedText style={styles.fieldLabel}>AVAILABLE TIMES</ThemedText>
-          <ThemedText themeColor="textSecondary" type="small">Choose one</ThemedText>
         </View>
         <View style={styles.timeSlots}>
           {selectedDoctor.availableTimes.map(slot => {
@@ -210,19 +228,9 @@ export default function BookingScreen() {
             );
           })}
         </View>
-
-        <ThemedView type="backgroundSelected" style={styles.note}>
-          <ThemedText type="smallBold">Prototype booking</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.noteText}>
-            This saves your selection on this device. It does not verify a real clinic appointment.
-          </ThemedText>
-        </ThemedView>
       </ThemedView>
 
       <View style={styles.actions}>
-        <View style={styles.actionHalf}>
-          <BackToDoctorsButton />
-        </View>
         <Pressable
           accessibilityLabel={isSaving ? 'Saving appointment' : 'Save appointment'}
           accessibilityRole="button"
@@ -246,6 +254,61 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: 20,
+  },
+  pageHeading: {
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.one,
+    paddingBottom: Spacing.one,
+  },
+  topBar: {
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  roundButton: {
+    height: 40,
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+    elevation: 2,
+    shadowColor: '#173b2c',
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  backGlyph: {
+    fontSize: 36,
+    lineHeight: 40,
+    fontWeight: '700',
+    marginTop: -4,
+  },
+  wordmark: {
+    fontSize: 18,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    letterSpacing: -0.7,
+  },
+  topBarSpacer: {
+    width: 40,
+  },
+  pageHeadingCopy: {
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  headingSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  pageTitle: {
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: '900',
+    letterSpacing: 0.15,
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   cardEyebrow: {
     fontSize: 10,
@@ -275,10 +338,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '800',
-  },
-  sectionHint: {
-    fontSize: 13,
-    lineHeight: 18,
   },
   dateButton: {
     minHeight: 64,
@@ -322,40 +381,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
   },
-  note: {
-    gap: Spacing.one / 2,
-    padding: Spacing.two,
-    borderRadius: 10,
-    marginTop: Spacing.two,
-  },
-  noteText: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
   actions: {
     flexDirection: 'row',
     gap: Spacing.two,
     marginTop: Spacing.one,
   },
-  actionHalf: {
-    flex: 1,
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: Spacing.two,
-    borderWidth: 1,
-    borderColor: '#9bb6a4',
-    borderRadius: 10,
-  },
   primaryButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 46,
     paddingHorizontal: Spacing.two,
-    borderRadius: 10,
+    borderRadius: 13,
   },
   primaryButtonText: {
     color: '#ffffff',

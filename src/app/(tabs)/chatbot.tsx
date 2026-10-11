@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ChelonHeader from '@/components/chelon-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { FloatingTabBarInset, MaxContentWidth, NavigationColors, Spacing } from '@/constants/theme';
@@ -242,11 +243,7 @@ export default function ChatbotScreen() {
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <View style={styles.keyboardArea}>
           <View style={styles.content}>
-            <View style={styles.topBar}>
-              <View style={styles.topBarSpacer} />
-              <ThemedText style={[styles.wordmark, { color: inkColor }]}>CHELON</ThemedText>
-              <View style={styles.topBarSpacer} />
-            </View>
+            <ChelonHeader />
 
             <View style={styles.heading}>
               <ThemedText style={[styles.headingTitle, { color: inkColor }]}>HEALTH CHATBOT</ThemedText>
@@ -371,21 +368,6 @@ const styles = StyleSheet.create({
     height: 190,
     borderBottomLeftRadius: 36,
     borderBottomRightRadius: 36,
-  },
-  topBar: {
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  wordmark: {
-    fontSize: 18,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    letterSpacing: -0.7,
-  },
-  topBarSpacer: {
-    width: 40,
   },
   heading: {
     alignItems: 'center',

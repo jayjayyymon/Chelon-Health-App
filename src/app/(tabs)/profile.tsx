@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ChelonHeader from '@/components/chelon-header';
 import { SleepChart } from '@/components/charts/SleepChart';
 import { StepsChart } from '@/components/charts/StepsChart';
 import { WaterChart } from '@/components/charts/WaterChart';
@@ -147,21 +148,10 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}>
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
           <View style={[styles.content, { maxWidth: maxContentWidth }]}>
-            <View style={styles.header}>
-              <ThemedText style={[styles.wordmark, { color: inkColor }]}>CHELON</ThemedText>
-              <Pressable
-                accessibilityLabel="Edit profile"
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => router.push('/edit-profile')}
-                style={({ pressed }) => [
-                  styles.settingsButton,
-                  { backgroundColor: cardColor, shadowColor: softShadow },
-                  pressed && styles.pressed,
-                ]}>
-                <ThemedText style={[styles.settingsIcon, { color: inkColor }]}>⚙</ThemedText>
-              </Pressable>
-            </View>
+            <ChelonHeader
+              accessibilityLabel="Edit profile"
+              onPress={() => router.push('/edit-profile')}
+            />
 
             <View style={[styles.profileHero, { backgroundColor: panelGreen, shadowColor: softShadow }]}>
               <Image
@@ -462,31 +452,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingTop: Spacing.two,
   },
-  header: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  wordmark: {
-    fontSize: 19,
-    lineHeight: 24,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    letterSpacing: -0.7,
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  },
-  settingsIcon: { fontSize: 21, lineHeight: 26 },
   profileHero: {
     minHeight: 150,
     flexDirection: 'row',

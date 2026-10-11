@@ -3,6 +3,7 @@ import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { useState, useRef, useEffect } from 'react';
 
+import ChelonHeader from '@/components/chelon-header';
 import { InfoRow } from '@/components/info-row';
 import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
@@ -161,7 +162,8 @@ export default function HealthCentersScreen() {
   }, [latitude, longitude, mapReady]);
 
   return (
-    <ScreenContainer inTabs title="Health Centers" subtitle="Nearby clinics based on your location">
+    <ScreenContainer inTabs>
+      <ChelonHeader />
       {!latitude && !longitude && !error ? (
         <SectionCard title="No location selected">
           <ThemedText>

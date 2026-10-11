@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type ChelonHeaderProps = {
   accessibilityLabel?: string;
@@ -16,21 +15,17 @@ export default function ChelonHeader({
   onPress,
   style,
 }: ChelonHeaderProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
   return (
     <View style={[styles.header, style]}>
-      <ThemedText style={styles.wordmark}>CHELON</ThemedText>
+      <View style={styles.wordmarkContainer}>
+        <ThemedText numberOfLines={1} style={styles.wordmark}>CHELON</ThemedText>
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         hitSlop={8}
         onPress={onPress}
-        style={({ pressed }) => [
-          settingsButtonStyle(isDark),
-          pressed && styles.settingsPressed,
-        ]}>
+        style={({ pressed }) => pressed && styles.settingsPressed}>
         <ThemedView type="backgroundElement" style={styles.settingsButton}>
           <ThemedText style={styles.settingsIcon}>⚙</ThemedText>
         </ThemedView>
@@ -47,33 +42,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: Spacing.one,
   },
+  wordmarkContainer: {
+    minWidth: 124,
+    minHeight: 32,
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
   wordmark: {
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '900',
     fontStyle: 'italic',
     letterSpacing: -0.3,
-    flexShrink: 0,
   },
   settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsPressed: {
-    opacity: 0.7,
-  },
-  settingsIcon: {
-    fontSize: 22,
-    lineHeight: 28,
-  },
-});
-
-// Helper to get proper button styles based on color scheme
-function settingsButtonStyle(isDark: boolean) {
-  return {
     width: 40,
     height: 40,
     borderRadius: 14,
@@ -84,6 +66,12 @@ function settingsButtonStyle(isDark: boolean) {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 3,
-    backgroundColor: isDark ? '#212225' : '#F0F0F3', // backgroundElement
-  };
-}
+  },
+  settingsPressed: {
+    opacity: 0.7,
+  },
+  settingsIcon: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
+});

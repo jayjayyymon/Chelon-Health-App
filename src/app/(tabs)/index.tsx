@@ -1,6 +1,7 @@
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ChelonHeader from '@/components/chelon-header';
 import { DashboardTrackerCard } from '@/components/dashboard-tracker-card';
 import {
   DietIcon,
@@ -100,19 +101,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}>
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
           <View style={styles.content}>
-            <View style={styles.header}>
-              <ThemedText style={styles.wordmark}>CHELON</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open settings"
-                hitSlop={8}
-                onPress={() => {}}
-                style={({ pressed }) => pressed && styles.settingsPressed}>
-                <ThemedView type="backgroundElement" style={styles.settingsButton}>
-                  <ThemedText style={styles.settingsIcon}>⚙</ThemedText>
-                </ThemedView>
-              </Pressable>
-            </View>
+            <ChelonHeader onPress={() => {}} />
 
             <ThemedView type="backgroundElement" style={styles.greetingCard}>
               <View style={styles.greetingText}>
@@ -177,39 +166,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
     gap: Spacing.three,
-  },
-  header: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.one,
-  },
-  wordmark: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    letterSpacing: -0.3,
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  },
-  settingsPressed: {
-    opacity: 0.7,
-  },
-  settingsIcon: {
-    fontSize: 22,
-    lineHeight: 28,
   },
   greetingCard: {
     minHeight: 76,
