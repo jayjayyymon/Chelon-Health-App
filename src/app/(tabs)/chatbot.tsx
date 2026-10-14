@@ -20,6 +20,8 @@ import { FloatingTabBarInset, MaxContentWidth, NavigationColors, Spacing } from 
 import { useHealthData } from '@/context/HealthDataContext';
 import { useProfile } from '@/hooks/useProfile';
 import { getLocalDateKey } from '@/utils/dietStorage';
+import Constants from 'expo-constants';
+import MarkdownDisplay from 'react-native-markdown-display';
 
 type ChatMessage = {
   id: string;
@@ -27,10 +29,16 @@ type ChatMessage = {
   text: string;
 };
 
+type BackendMessage = {
+  role: string;
+  content: string;
+};
+
 export default function ChatbotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [keyboardVisible, setKeyboardVisible] = useState<boolean>(false);
   const messagesRef = useRef<ScrollView>(null);
   const pendingReplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -118,112 +126,46 @@ export default function ChatbotScreen() {
     return getTodayMeals().length;
   };
 
-  // Simple rule-based responses using live data
-  const getBotResponse = (userInput: string): string => {
-    const lowerInput = userInput.toLowerCase().trim();
+  // Generate a brief health summary string
+  const getHealthSummary = (): string => {
+    const todayL = getTodayWaterIntakeL();
+    const goalL = profile.dailyWaterGoalL;
+    const latestWeight = getLatestWeight();
+    const latestSleep = getLatestSleep();
+    const latestSteps = getLatestSteps();
+    const totalCalories = getTodayTotalCalories();
+    const mealCount = getTodayMealCount();
+    const wellnessStatus = profile.wellnessStatus ?? 'not completed';
 
-    // Greetings
-    if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('hey')) {
-      return 'Hello! How can I help you with your health today?';
+    let summary = `Today's health summary: `;
+    summary += `Water ${todayL.toFixed(1)}L/${goalL}L. `;
+    if (latestWeight) {
+      summary += `Weight ${latestWeight.kg}kg. `;
     }
-
-    // Water intake
-    if (lowerInput.includes('water') || lowerInput.includes('drink') || lowerInput.includes('hydration')) {
-      const todayL = getTodayWaterIntakeL();
-      const goalL = profile.dailyWaterGoalL;
-      return `You've logged ${todayL.toFixed(1)} L of water today out of your ${goalL} L goal. Keep drinking!`;
+    if (latestSleep) {
+      summary += `Sleep ${latestSleep.hours}hrs. `;
     }
-
-    // Weight
-    if (lowerInput.includes('weight') || lowerInput.includes('weigh')) {
-      const latest = getLatestWeight();
-      if (latest) {
-        const currentWeight = latest.kg;
-        const goalWeight = profile.goalWeightKg;
-        const weightDiff = currentWeight - goalWeight;
-        if (weightDiff > 0) {
-          return `Your current weight is ${currentWeight} kg, which is ${weightDiff.toFixed(1)} kg above your goal of ${goalWeight} kg.`;
-        } else if (weightDiff < 0) {
-          return `Your current weight is ${currentWeight} kg, which is ${Math.abs(weightDiff).toFixed(1)} kg below your goal of ${goalWeight} kg. Great progress!`;
-        } else {
-          return `Congratulations! You've reached your goal weight of ${goalWeight} kg!`;
-        }
-      } else {
-        return 'No weight data recorded yet. Start tracking your weight to see your progress!';
-      }
+    if (latestSteps) {
+      summary += `Steps ${latestSteps.steps}. `;
     }
+    summary += `Calories ${totalCalories}kcal from ${mealCount} meals. `;
+    summary += `Wellness: ${wellnessStatus}.`;
 
-    // Sleep
-    if (lowerInput.includes('sleep') || lowerInput.includes('tired') || lowerInput.includes('rest')) {
-      const latest = getLatestSleep();
-      if (latest) {
-        const sleepHours = latest.hours;
-        return `You slept ${sleepHours} hours last night. Aim for 7-9 hours of quality sleep for optimal recovery.`;
-      } else {
-        return 'No sleep data recorded yet. Try logging your sleep to see your patterns!';
-      }
-    }
-
-    // Steps/Exercise
-    if (lowerInput.includes('step') || lowerInput.includes('walk') || lowerInput.includes('exercise') || lowerInput.includes('activity')) {
-      const latest = getLatestSteps();
-      if (latest) {
-        const todaySteps = latest.steps;
-        const goalSteps = profile.dailyStepGoal;
-        return `You've taken ${todaySteps.toLocaleString()} steps today toward your goal of ${goalSteps.toLocaleString()} steps. Keep building your daily movement routine.`;
-      } else {
-        return 'No step data recorded yet. Try adding some steps to see your progress!';
-      }
-    }
-
-    // Diet/Food
-    if (lowerInput.includes('food') || lowerInput.includes('eat') || lowerInput.includes('meal') || lowerInput.includes('calorie') || lowerInput.includes('diet')) {
-      const totalCalories = getTodayTotalCalories();
-      const mealCount = getTodayMealCount();
-      if (mealCount > 0) {
-        return `You've consumed ${totalCalories} kcal from ${mealCount} meal${mealCount !== 1 ? 's' : ''} today. Remember to balance your meals with protein, veggies, and whole grains.`;
-      } else {
-        return 'No meals logged yet. Start tracking your food intake to see your nutrition!';
-      }
-    }
-
-    // Wellness/Mood
-    if (lowerInput.includes('mood') || lowerInput.includes('feel') || lowerInput.includes('stress') || lowerInput.includes('anxiety') || lowerInput.includes('wellness')) {
-      const latestStatus = profile.wellnessStatus ?? 'not completed';
-      return `Your latest wellness check-in is ${latestStatus}. You can take another check-in whenever you want to reflect on how you are feeling.`;
-    }
-
-    // Doctors
-    if (lowerInput.includes('doctor') || lowerInput.includes('appointment') || lowerInput.includes('consultation')) {
-      return 'You have 3 doctors available for consultation. Would you like to book an appointment?';
-    }
-
-    // Health centers
-    if (lowerInput.includes('clinic') || lowerInput.includes('hospital') || lowerInput.includes('health center') || lowerInput.includes('nearby')) {
-      return 'There are 3 nearby health centers. The closest is Riverside Clinic at 0.8 km away.';
-    }
-
-    // Profile/Goals
-    if (lowerInput.includes('goal') || lowerInput.includes('target') || lowerInput.includes('profile')) {
-      return `Your health goals are: Weight ${profile.goalWeightKg} kg, Water ${profile.dailyWaterGoalL} L/day, Steps ${profile.dailyStepGoal.toLocaleString()}/day.`;
-    }
-
-    // Help
-    if (lowerInput.includes('help') || lowerInput.includes('what can you do')) {
-      return 'I can help you with questions about your water intake, weight, sleep, steps, meals, wellness, doctors appointments, and nearby health centers. Just ask about any of your health data!';
-    }
-
-    // Default response
-    return 'I\'m here to help with your health questions! Try asking about your water, weight, sleep, steps, meals, or wellness.';
+    return summary;
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (profileLoading) return;
 
     const text = inputText.trim();
     if (text === '') return;
 
-    // Add user message
+    // Prevent empty messages
+    if (text.length === 0) {
+      return;
+    }
+
+    // Add user message to chat state immediately
     const userMessage = {
       id: `msg-${Date.now()}`,
       from: 'user' as const,
@@ -231,24 +173,111 @@ export default function ChatbotScreen() {
     };
 
     setMessages(prev => [...prev, userMessage]);
-
-    // Get bot response
-    const botResponse = getBotResponse(text);
-    const botMessage = {
-      id: `msg-${Date.now() + 1}`,
-      from: 'bot' as const,
-      text: botResponse,
-    };
-
-    // Add bot message after a short delay for better UX
-    if (pendingReplyRef.current) clearTimeout(pendingReplyRef.current);
-    pendingReplyRef.current = setTimeout(() => {
-      setMessages(prev => [...prev, botMessage]);
-      pendingReplyRef.current = null;
-    }, 500);
-
-    // Clear input
     setInputText('');
+    setLoading(true);
+
+    try {
+      // Get Supabase URL and anon key from Expo constants
+      const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl;
+      const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase configuration not found. Please set supabaseUrl and supabaseAnonKey in app.json extra.');
+      }
+
+      // Prepare conversation history to send to backend
+      // Map existing messages to backend format (role, content)
+      const existingMessagesAsBackend: BackendMessage[] = messages.map(msg => ({
+        role: msg.from === 'user' ? 'user' : 'assistant',
+        content: msg.text,
+      }));
+
+      // Limit conversation history to most recent 10 messages to avoid exceeding limits
+      const recentMessages = existingMessagesAsBackend.slice(-10);
+
+      // Create health summary system message
+      const healthSummary = getHealthSummary();
+      const healthMessage: BackendMessage = {
+        role: 'system',
+        content: healthSummary,
+      };
+
+      // Current user message as backend message
+      const currentUserMessage: BackendMessage = {
+        role: 'user',
+        content: text,
+      };
+
+      // Combine: [health summary, recent messages, current user message]
+      // Note: The edge function will prepend its own system instruction
+      const backendMessages = [healthMessage, ...recentMessages, currentUserMessage];
+
+      // Call the Supabase Edge Function
+      const response = await fetch(`${supabaseUrl}/functions/v1/chelon-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          messages: backendMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        // Handle HTTP errors
+        let errorMessage = 'Failed to get response from AI service';
+        try {
+          const errorData = await response.json();
+          if (errorData.error?.message) {
+            errorMessage = `AI service error: ${errorData.error.message}`;
+          }
+        } catch {
+          errorMessage = `AI service error: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const assistantMessageText = data.message;
+
+      if (!assistantMessageText) {
+        throw new Error('No response generated from AI service');
+      }
+
+      // Add bot response to chat state
+      const botMessage = {
+        id: `msg-${Date.now() + 1}`,
+        from: 'bot' as const,
+        text: assistantMessageText,
+      };
+
+      // Add bot message after a short delay for better UX (to match previous behavior)
+      if (pendingReplyRef.current) clearTimeout(pendingReplyRef.current);
+      pendingReplyRef.current = setTimeout(() => {
+        setMessages(prev => [...prev, botMessage]);
+        pendingReplyRef.current = null;
+        setLoading(false);
+      }, 500);
+    } catch (error: unknown) {
+      console.error('Error in chatbot:', error);
+      // Add an error message as a bot message
+      const errorMessage = error instanceof Error ? `Error: ${error.message}. Please try again.` : 'An unknown error occurred. Please try again.';
+      const botMessage = {
+        id: `msg-${Date.now() + 1}`,
+        from: 'bot' as const,
+        text: errorMessage,
+      };
+
+      // Add error message after a short delay
+      if (pendingReplyRef.current) clearTimeout(pendingReplyRef.current);
+      pendingReplyRef.current = setTimeout(() => {
+        setMessages(prev => [...prev, botMessage]);
+        pendingReplyRef.current = null;
+        setLoading(false);
+      }, 500);
+    }
   };
 
   return (
@@ -260,8 +289,8 @@ export default function ChatbotScreen() {
             <ChelonHeader />
 
             <View style={styles.heading}>
-              <ThemedText style={[styles.headingTitle, { color: inkColor }]}>HEALTH CHATBOT</ThemedText>
-              <ThemedText style={[styles.headingSubtitle, { color: mutedInk }]}>Ask me about your health data and goals</ThemedText>
+              <ThemedText style={ [styles.headingTitle, { color: inkColor }] }>HEALTH CHATBOT</ThemedText>
+              <ThemedText style={ [styles.headingSubtitle, { color: mutedInk }] }>Ask me about your health data and goals</ThemedText>
             </View>
 
             <ScrollView
@@ -282,10 +311,16 @@ export default function ChatbotScreen() {
                       message.from === 'user' && styles.userBubble,
                       message.from === 'bot' && styles.assistantBubble,
                     ]}>
-                    <ThemedText style={[styles.sender, { color: message.from === 'bot' ? panelGreen : inkColor }]}>
+                    <ThemedText style={ [styles.sender, { color: message.from === 'bot' ? panelGreen : inkColor } ]}>
                       {message.from === 'bot' ? 'CHELON' : 'YOU'}
                     </ThemedText>
-                    <ThemedText style={[styles.messageText, { color: inkColor }]}>{message.text}</ThemedText>
+                    {message.from === 'bot' ? (
+                      <MarkdownDisplay>
+                        {message.text}
+                      </MarkdownDisplay>
+                    ) : (
+                      <ThemedText style={ [styles.messageText, { color: inkColor } ]}>{message.text}</ThemedText>
+                    )}
                   </View>
                 );
 
@@ -295,7 +330,7 @@ export default function ChatbotScreen() {
 
                 return (
                   <View key={message.id} style={styles.assistantMessageRow}>
-                    <View style={[styles.avatarFrame, { backgroundColor: isDark ? '#245c42' : '#e5f3e5', borderColor }]}>
+                    <View style={ [styles.avatarFrame, { backgroundColor: isDark ? '#245c42' : '#e5f3e5', borderColor } ]}>
                       <Image
                         accessibilityLabel="CHELON turtle mascot"
                         source={require('../../../assets/images/turtle-avatar.png')}
@@ -326,21 +361,24 @@ export default function ChatbotScreen() {
                   placeholder={profileLoading ? 'Loading your health goals...' : 'Type a message...'}
                   value={inputText}
                   onChangeText={setInputText}
-                  style={[styles.input, { color: inkColor, borderColor }]}
+                  style={ [styles.input, { color: inkColor, borderColor } ]}
                   placeholderTextColor={mutedInk}
                   onSubmitEditing={handleSendMessage}
-                  editable={!profileLoading}
+                  editable={!profileLoading && !loading}
                   returnKeyType="send"
                 />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Send message"
-                  accessibilityState={{ disabled: profileLoading }}
-                  disabled={profileLoading}
+                  accessibilityState={{ disabled: profileLoading || loading }}
+                  disabled={profileLoading || loading}
                   onPress={handleSendMessage}
                   style={({ pressed }) => [
                     styles.sendButton,
-                    { backgroundColor: panelGreen, opacity: profileLoading ? 0.5 : pressed ? 0.75 : 1 },
+                    {
+                      backgroundColor: panelGreen,
+                      opacity: (profileLoading || loading) ? 0.5 : pressed ? 0.75 : 1
+                    },
                   ]}>
                   <ThemedText style={styles.sendText}>SEND</ThemedText>
                 </Pressable>

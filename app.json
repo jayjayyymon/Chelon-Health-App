@@ -17,7 +17,6 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.HealthApp"
     },
     "web": {
@@ -45,6 +44,14 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "02cfb568-f33d-4813-ad30-849774067d53"
+      },
+      "supabaseUrl": "https://fgjxvairuicwtqepzqrl.supabase.co",
+      "supabaseAnonKey": "sb_publishable_dWQFqnjc6UzgEnx7ZaS2gA_vp5YpRwK"
     }
   }
 }
