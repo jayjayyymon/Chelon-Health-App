@@ -2,6 +2,8 @@ import { version } from 'expo/package.json';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
+import { loadThemePreference, saveThemePreference } from '@/utils/themeStorage';
 import {
   ActivityIndicator,
   Pressable,
@@ -38,12 +40,26 @@ export default function SettingsScreen() {
   const [resetting, setResetting] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
+  const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system' | null>(null);
+  const systemScheme = useColorScheme();
 
   useEffect(() => {
     let active = true;
     void loadNotificationsEnabled().then(enabled => {
       if (active) setNotificationsEnabled(enabled);
     });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function loadPreference() {
+      const preference = await loadThemePreference();
+      if (active) setThemePreference(preference);
+    }
+    loadPreference();
     return () => {
       active = false;
     };
@@ -232,6 +248,144 @@ export default function SettingsScreen() {
           <ThemedText themeColor="textSecondary" type="small">
             Prototype app using local data. No account service or remote support system is connected.
           </ThemedText>
+        </View>
+      ),
+    },
+    {
+      id: 'appearance',
+      title: 'Appearance',
+      icon: '🎨',
+      content: () => (
+        <View style={styles.accordionContent}>
+          <View style={styles.settingsRow}>
+            <View style={styles.settingsRowInfo}>
+              <ThemedText style={styles.settingsRowTitle}>Theme</ThemedText>
+              <ThemedText themeColor="textSecondary" type="small">
+                Choose your preferred color scheme
+              </ThemedText>
+            </View>
+            <View style={styles.themeSelector}>
+              {/* Light option */}
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: themePreference === 'light' || (themePreference === null && systemScheme === 'light') }}
+                onPress={() => {
+                  setThemePreference('light');
+                  saveThemePreference('light');
+                }}
+                style={[
+                  {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.one,
+                    paddingHorizontal: Spacing.two,
+                    borderWidth: 1,
+                    borderRadius: Spacing.one,
+                    borderColor: theme.backgroundElement,
+                    ...(themePreference === 'light' ? {
+                      backgroundColor: theme.backgroundSelected,
+                      borderColor: theme.backgroundSelected,
+                    } : {}),
+                  },
+                  themePreference === 'light' && {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.one,
+                    paddingHorizontal: Spacing.two,
+                    borderWidth: 1,
+                    borderRadius: Spacing.one,
+                    backgroundColor: theme.backgroundSelected,
+                  }
+                ]}>
+                <ThemedText style={[
+                  { fontSize: 14, fontWeight: '600', color: theme.textSecondary },
+                  themePreference === 'light' && { color: theme.text, fontWeight: '700' }
+                ]}>Light</ThemedText>
+              </Pressable>
+
+              {/* Dark option */}
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: themePreference === 'dark' }}
+                onPress={() => {
+                  setThemePreference('dark');
+                  saveThemePreference('dark');
+                }}
+                style={[
+                  {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.one,
+                    paddingHorizontal: Spacing.two,
+                    borderWidth: 1,
+                    borderRadius: Spacing.one,
+                    borderColor: theme.backgroundElement,
+                    ...(themePreference === 'dark' ? {
+                      backgroundColor: theme.backgroundSelected,
+                      borderColor: theme.backgroundSelected,
+                    } : {}),
+                  },
+                  themePreference === 'dark' && {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.one,
+                    paddingHorizontal: Spacing.two,
+                    borderWidth: 1,
+                    borderRadius: Spacing.one,
+                    backgroundColor: theme.backgroundSelected,
+                  }
+                ]}>
+                <ThemedText style={[
+                  { fontSize: 14, fontWeight: '600', color: theme.textSecondary },
+                  themePreference === 'dark' && { color: theme.text, fontWeight: '700' }
+                ]}>Dark</ThemedText>
+              </Pressable>
+
+              {/* System option */}
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: themePreference === 'system' || (themePreference === null && systemScheme !== 'light' && systemScheme !== 'dark') }}
+                onPress={() => {
+                  setThemePreference('system');
+                  saveThemePreference('system');
+                }}
+                style={[
+                  {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.one,
+                    paddingHorizontal: Spacing.two,
+                    borderWidth: 1,
+                    borderRadius: Spacing.one,
+                    borderColor: theme.backgroundElement,
+                    ...(themePreference === 'system' ? {
+                      backgroundColor: theme.backgroundSelected,
+                      borderColor: theme.backgroundSelected,
+                    } : {}),
+                  },
+                  themePreference === 'system' && {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.one,
+                    paddingHorizontal: Spacing.two,
+                    borderWidth: 1,
+                    borderRadius: Spacing.one,
+                    backgroundColor: theme.backgroundSelected,
+                  }
+                ]}>
+                <ThemedText style={[
+                  { fontSize: 14, fontWeight: '600', color: theme.textSecondary },
+                  (themePreference === 'system' || (themePreference === null && systemScheme !== 'light' && systemScheme !== 'dark')) && { color: theme.text, fontWeight: '700' }
+                ]}>System Default</ThemedText>
+              </Pressable>
+            </View>
+          </View>
         </View>
       ),
     },
@@ -442,5 +596,11 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  themeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.one,
   },
 });

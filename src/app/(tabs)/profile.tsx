@@ -29,6 +29,7 @@ import { getLocalDateKey } from '@/utils/dietStorage';
 import { Appointment, getAppointments, removeAppointment } from '@/utils/appointmentStorage';
 import { useProfile } from '@/hooks/useProfile';
 import { useAlert } from '@/hooks/use-alert';
+import { supabase } from '@/utils/supabaseClient';
 
 const profileImage = require('../../../assets/images/profile-picture.jpg');
 
@@ -152,6 +153,42 @@ export default function ProfileScreen() {
     });
   };
 
+  const handleSignOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+
+      // Clear all local storage data
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+
+      // Clear all health app related storage keys
+      const storageKeys = [
+        '@healthapp_appointments',
+        '@healthapp_dietMeals',
+        '@healthapp_waterGlasses',
+        '@healthapp_sleepHistory',
+        '@healthapp_stepsHistory',
+        '@healthapp_userProfile',
+        '@healthapp_weightHistory',
+        '@healthapp_notificationsEnabled'
+      ];
+
+      // Remove each storage key
+      await Promise.all(
+        storageKeys.map(key => AsyncStorage.default.removeItem(key))
+      );
+
+      // Redirect to sign-in screen after sign out
+      router.replace('/auth/sign-in');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      showAlert({
+        title: 'Error signing out',
+        message: 'Failed to sign out. Please try again.',
+        type: 'error',
+      });
+    }
+  }, [router]);
+
   return (
     <View style={{ flex: 1 }}>
       <ThemedView style={styles.root}>
@@ -185,6 +222,19 @@ export default function ProfileScreen() {
                     onPress={() => router.push('/edit-profile')}
                     style={({ pressed }) => [styles.heroButton, pressed && styles.pressed]}>
                     <ThemedText style={styles.heroButtonText}>EDIT PROFILE</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel="Sign out"
+                    accessibilityRole="button"
+                    onPress={handleSignOut}
+                    style={({ pressed }) => [
+                      styles.heroButton,
+                      { backgroundColor: 'rgba(255,255,255,0.1)' },
+                      pressed && styles.pressed,
+                    ]}>
+                    <ThemedText style={[styles.heroButtonText, { color: '#ffffff' }]}>
+                      SIGN OUT
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -277,9 +327,9 @@ export default function ProfileScreen() {
                         ? currentWeight
                         : selectedTracker === 'water'
                           ? `${totalWaterL.toFixed(1)} L`
-                          : selectedTracker === 'sleep'
-                            ? latestSleep ? `${latestSleep.hours.toFixed(1)} hrs` : '--'
-                            : latestSteps ? latestSteps.steps.toLocaleString() : '--'}
+                        : selectedTracker === 'sleep'
+                          ? latestSleep ? `${latestSleep.hours.toFixed(1)} hrs` : '--'
+                          : latestSteps ? latestSteps.steps.toLocaleString() : '--'}
                   </ThemedText>
                 </View>
                 <View style={styles.chartFrame}>

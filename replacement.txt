@@ -1,0 +1,35 @@
+  const handleSignOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+      
+      // Clear all local storage data
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      
+      // Clear all health app related storage keys
+      const storageKeys = [
+        '@healthapp_appointments',
+        '@healthapp_dietMeals',
+        '@healthapp_waterGlasses',
+        '@healthapp_sleepHistory',
+        '@healthapp_stepsHistory',
+        '@healthapp_userProfile',
+        '@healthapp_weightHistory',
+        '@healthapp_notificationsEnabled'
+      ];
+      
+      // Remove each storage key
+      await Promise.all(
+        storageKeys.map(key => AsyncStorage.default.removeItem(key))
+      );
+      
+      // Redirect to sign-in screen after sign out
+      router.replace('/auth/sign-in');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      showAlert({
+        title: 'Error signing out',
+        message: 'Failed to sign out. Please try again.',
+        type: 'error',
+      });
+    }
+  }, [router]);
