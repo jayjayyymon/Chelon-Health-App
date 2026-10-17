@@ -93,7 +93,7 @@ export default function DashboardScreen() {
   const trackerRows = [
     orderedShortcuts.slice(0, 2),
     orderedShortcuts.slice(2, 4),
-    orderedShortcuts.slice(4, 5),
+    orderedShortcuts.slice(4, 6),
   ];
 
   return (
@@ -136,6 +136,8 @@ export default function DashboardScreen() {
                         title={item.title}
                         icon={item.icon}
                         color={item.color}
+                        value={item.value}
+                        detail={item.detail}
                       />
                     </View>
                   ))}

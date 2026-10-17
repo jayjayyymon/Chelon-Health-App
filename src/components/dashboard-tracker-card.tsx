@@ -11,9 +11,11 @@ type DashboardTrackerCardProps = {
   title: string;
   icon: ComponentType<TrackerIconProps> | string;
   color: string;
+  value?: string;
+  detail?: string;
 };
 
-export function DashboardTrackerCard({ href, title, icon, color }: DashboardTrackerCardProps) {
+export function DashboardTrackerCard({ href, title, icon, color, value, detail }: DashboardTrackerCardProps) {
   return (
     <Link href={href} asChild>
       <Pressable
@@ -33,9 +35,21 @@ export function DashboardTrackerCard({ href, title, icon, color }: DashboardTrac
               )}
             </View>
           </View>
-          <ThemedText numberOfLines={1} style={styles.title}>
-            {title}
-          </ThemedText>
+          <View style={styles.content}>
+            <ThemedText numberOfLines={1} style={styles.title}>
+              {title}
+            </ThemedText>
+            {value && (
+              <ThemedText style={styles.value}>
+                {value}
+              </ThemedText>
+            )}
+            {detail && (
+              <ThemedText style={styles.detail}>
+                {detail}
+              </ThemedText>
+            )}
+          </View>
         </View>
       </Pressable>
     </Link>
@@ -47,22 +61,28 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
     minWidth: 0,
-    borderRadius: 20,
-    elevation: 4,
+    borderRadius: 18,
+    elevation: 2,
     shadowColor: '#000000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
     shadowRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   pressed: {
-    opacity: 0.82,
+    elevation: 4,
+    shadowOpacity: 0.2,
   },
   card: {
     width: '100%',
     height: 164,
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: 'hidden',
-    padding: Spacing.three,
+    padding: Spacing.four,
+  },
+  content: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   ripples: {
@@ -93,26 +113,36 @@ const styles = StyleSheet.create({
     height: 52,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    marginBottom: Spacing.two,
   },
   icon: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 32,
   },
   title: {
-    alignSelf: 'flex-end',
-    maxWidth: '100%',
+    color: '#FFFFFF',
+    fontFamily: 'SourceSansPro_600SemiBold',
+    fontSize: 16,
+    lineHeight: 20,
+    marginBottom: Spacing.two,
+  },
+  value: {
     color: '#FFFFFF',
     fontFamily: 'SourceSansPro_700Bold',
-    fontSize: 17,
-    lineHeight: 22,
-    letterSpacing: 0.3,
-    textAlign: 'right',
-    textTransform: 'uppercase',
+    fontSize: 22,
+    lineHeight: 26,
+    marginBottom: Spacing.one,
+  },
+  detail: {
+    color: 'rgba(255,255,255,0.8)',
+    fontFamily: 'SourceSansPro_400Regular',
+    fontSize: 13,
+    lineHeight: 16,
   },
 });

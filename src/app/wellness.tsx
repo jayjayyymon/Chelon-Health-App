@@ -1,15 +1,15 @@
-import { StyleSheet, View, Pressable } from 'react-native';
-import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 
-import { PlaceholderButton } from '@/components/placeholder-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { useProfile } from '@/hooks/useProfile';
+import { TrackerActionButton } from '@/components/tracker-action-button';
+import { Colors, NavigationColors, Spacing } from '@/constants/theme';
 import { useAlert } from '@/hooks/use-alert';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function WellnessScreen() {
   const router = useRouter();
@@ -18,7 +18,16 @@ export default function WellnessScreen() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [step, setStep] = useState<'form' | 'result'>('form');
   const [attemptedContinue, setAttemptedContinue] = useState(false);
-  const [alertVisible, showAlert, hideAlert, AlertComponent] = useAlert();
+  const [, showAlert, , AlertComponent] = useAlert();
+  const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const theme = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
+  const panelGreen = isDark ? '#245c42' : NavigationColors.background;
+  const panelText = '#ffffff';
+  const inkColor = isDark ? '#f1f7f2' : '#113c3b';
+  const mutedInk = isDark ? '#c1d4ca' : '#607b70';
+  const tileColor = isDark ? '#17382e' : '#ffffff';
+  const borderColor = isDark ? '#397258' : '#d9e7dc';
 
   // Define the questionnaire
   const questions = [
@@ -199,17 +208,53 @@ export default function WellnessScreen() {
 
   if (step === 'form') {
     return (
-      <ScreenContainer subtitle="Reflect on your well-being with this quick check-in.">
-        <SectionCard title="Wellness Check-In">
+      <ScreenContainer>
+        <View style={styles.topBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.backButton,
+              { backgroundColor: tileColor, opacity: pressed ? 0.78 : 1 },
+            ]}>
+            <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
+          </Pressable>
+          <ThemedText style={[styles.wordmark, { color: inkColor }]}>wellness tracker</ThemedText>
+          <View style={styles.topBarSpacer} />
+        </View>
+        <ThemedText themeColor="textSecondary" style={styles.headerDescription}>
+          Reflect on your well-being with this quick check-in.
+        </ThemedText>
+
+        <SectionCard title="">
           {/* Progress indicator */}
-          <ThemedText themeColor="textSecondary" style={styles.progressText}>
-            Question {currentQuestionIndex + 1} of {totalQuestions}
-          </ThemedText>
+          <View style={styles.progressContainer}>
+            <ThemedText themeColor="textSecondary" style={styles.progressText}>
+              Question {currentQuestionIndex + 1} of {totalQuestions}
+            </ThemedText>
+            <View style={[styles.progressTrack, { backgroundColor: tileColor, borderColor }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
+                    backgroundColor: panelGreen,
+                  },
+                ]}
+              />
+            </View>
+          </View>
 
           {/* Current question */}
-          <View key={currentQuestion.id} style={styles.questionContainer}>
-            <ThemedText type="smallBold">{currentQuestion.title}</ThemedText>
-            <View style={styles.optionsRow}>
+          <ThemedView
+            type="backgroundElement"
+            key={currentQuestion.id}
+            style={[styles.questionCard, { backgroundColor: tileColor, borderColor }]}>
+            <ThemedText type="smallBold" style={styles.questionTitle}>
+              {currentQuestion.title}
+            </ThemedText>
+            <View style={styles.optionsContainer}>
               {currentQuestion.options.map((option) => (
                 <Pressable
                   key={option.value}
@@ -217,40 +262,46 @@ export default function WellnessScreen() {
                   accessibilityRole="radio"
                   accessibilityState={{ selected: answers[currentQuestion.id] === option.value }}
                   onPress={() => handleAnswerChange(option.value)}
-                >
-                  <ThemedView
-                    type={answers[currentQuestion.id] === option.value ? 'backgroundSelected' : 'background'}
-                    style={styles.optionChip}
-                  >
-                    <ThemedText type="small">{option.label}</ThemedText>
-                  </ThemedView>
+                  style={({ pressed }) => [
+                    styles.optionButton,
+                    {
+                      backgroundColor: tileColor,
+                      borderColor: answers[currentQuestion.id] === option.value ? panelGreen : borderColor,
+                    },
+                    pressed && styles.optionButtonPressed,
+                  ]}>
+                  <ThemedText type="small" style={[styles.optionLabel, { color: inkColor }]}>
+                    {option.label}
+                  </ThemedText>
                 </Pressable>
               ))}
             </View>
-          </View>
+          </ThemedView>
         </SectionCard>
 
         {/* Navigation buttons */}
         <View style={styles.buttonContainer}>
           {currentQuestionIndex > 0 && (
-            <PlaceholderButton label="Back" onPress={handleBack} />
-          )}
-          {currentQuestionIndex < totalQuestions - 1 ? (
-            <PlaceholderButton
-              label="Next"
-              onPress={handleNextOrSubmit}
-            />
-          ) : (
-            <PlaceholderButton
-              label="Submit"
-              onPress={handleNextOrSubmit}
+            <TrackerActionButton
+              backgroundColor={tileColor}
+              color={inkColor}
+              label="BACK"
+              onPress={handleBack}
+              style={[styles.secondaryAction, { borderColor }]}
             />
           )}
+          <TrackerActionButton
+            backgroundColor={panelGreen}
+            color={panelText}
+            label={currentQuestionIndex < totalQuestions - 1 ? 'NEXT' : 'FINISH'}
+            onPress={handleNextOrSubmit}
+            style={styles.primaryAction}
+          />
         </View>
 
         {/* Validation message */}
         {attemptedContinue && !isCurrentQuestionAnswered && (
-          <ThemedText themeColor="textSecondary" style={styles.errorText}>
+          <ThemedText themeColor="textSecondary" style={[styles.errorText, { color: mutedInk }]}>
             Please answer the current question to continue.
           </ThemedText>
         )}
@@ -261,54 +312,88 @@ export default function WellnessScreen() {
   // Result step: show summary of answers with suggestions
   return (
     <View style={{ flex: 1 }}>
-      <ScreenContainer subtitle="Here's your wellness reflection.">
-        <SectionCard title="Your Wellness Check-In">
-        {/* Friendly header */}
-        <ThemedText type="smallBold" style={styles.resultHeader}>
-          Thanks for checking in! Here&apos;s what you shared:
+      <ScreenContainer>
+        <View style={styles.topBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.backButton,
+              { backgroundColor: tileColor, opacity: pressed ? 0.78 : 1 },
+            ]}>
+            <ThemedText style={[styles.backGlyph, { color: inkColor }]}>‹</ThemedText>
+          </Pressable>
+          <ThemedText style={[styles.wordmark, { color: inkColor }]}>wellness tracker</ThemedText>
+          <View style={styles.topBarSpacer} />
+        </View>
+        <ThemedText themeColor="textSecondary" style={styles.headerDescription}>
+          Here&apos;s your wellness reflection.
         </ThemedText>
 
-        {/* Answers summary */}
-        {questions.map((question) => (
-          <View key={question.id} style={styles.summaryItem}>
-            <ThemedText type="smallBold">{question.title}</ThemedText>
-            <ThemedText>
-              {answers[question.id] !== undefined
-                ? questions.find(q => q.id === question.id)?.options.find(o => o.value === answers[question.id])?.label
-                : 'Not answered'}
-            </ThemedText>
-          </View>
-        ))}
+        <SectionCard title="">
+          {/* Friendly header */}
+          <ThemedText type="smallBold" style={styles.resultHeader}>
+            Thanks for checking in! Here&apos;s what you shared:
+          </ThemedText>
 
-        {/* Suggestions section */}
-        {suggestions.length > 0 && (
-          <View style={styles.suggestionsSection}>
-            <ThemedText type="smallBold" style={styles.suggestionsHeader}>
-              Friendly suggestions:
-            </ThemedText>
-            {suggestions.map((suggestion, index) => (
-              <ThemedText key={index} style={styles.suggestionText}>
-                • {suggestion}
-              </ThemedText>
+          {/* Answers summary */}
+          <View style={styles.summaryContainer}>
+            {questions.map((question) => (
+              <ThemedView
+                type="backgroundSelected"
+                key={question.id}
+                style={[styles.summaryItem, { backgroundColor: tileColor, borderColor }]}>
+                <ThemedText type="smallBold" style={styles.summaryQuestion}>
+                  {question.title}
+                </ThemedText>
+                <ThemedText style={styles.summaryAnswer}>
+                  {(answers[question.id] !== undefined
+                    ? questions.find(q => q.id === question.id)?.options.find(o => o.value === answers[question.id])?.label
+                    : 'Not answered')}
+                </ThemedText>
+              </ThemedView>
             ))}
           </View>
-        )}
 
-        {/* Disclaimer */}
-        <ThemedText themeColor="textSecondary" style={styles.disclaimer}>
-          This check-in is for personal wellness reflection only. It is not a clinical assessment or substitute for professional care. If you are experiencing distress or thoughts of self-harm, please reach out to a trusted person or emergency services immediately.
-        </ThemedText>
-      </SectionCard>
+          {/* Suggestions section */}
+          {(suggestions.length > 0 && (
+            <View style={styles.suggestionsSection}>
+              <ThemedText type="smallBold" style={styles.suggestionsHeader}>
+                Friendly suggestions:
+              </ThemedText>
+              {suggestions.map((suggestion, index) => (
+                <ThemedText key={index} style={styles.suggestionText}>
+                  • {suggestion}
+                </ThemedText>
+              ))}
+            </View>
+          ))}
 
-      <View style={styles.buttonContainer}>
-        <PlaceholderButton label="Retake" onPress={handleRetake} />
-        <PlaceholderButton
-          label="Done"
-          onPress={() => {
-            // Navigate to dashboard (tabs index)
-            router.replace('../(tabs)');
-          }}
-        />
+          {/* Disclaimer */}
+          <ThemedText themeColor="textSecondary" style={styles.disclaimer}>
+            This check-in is for personal wellness reflection only. It is not a clinical assessment or substitute for professional care. If you are experiencing distress or thoughts of self-harm, please reach out to a trusted person or emergency services immediately.
+          </ThemedText>
+        </SectionCard>
+
+        <View style={styles.buttonContainer}>
+          <TrackerActionButton
+            backgroundColor={tileColor}
+            color={inkColor}
+            label="RETAKE"
+            onPress={handleRetake}
+            style={[styles.secondaryAction, { borderColor }]}
+          />
+          <TrackerActionButton
+            backgroundColor={panelGreen}
+            color={panelText}
+            label="DONE"
+            onPress={() => {
+              // Navigate to dashboard (tabs index)
+              router.replace('../(tabs)');
+            }}
+            style={styles.primaryAction}
+          />
         </View>
       </ScreenContainer>
       <AlertComponent />
@@ -317,55 +402,166 @@ export default function WellnessScreen() {
 }
 
 const styles = StyleSheet.create({
-  questionContainer: {
-    marginVertical: Spacing.two,
-  },
-  optionsRow: {
+  topBar: {
+    height: 44,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 25,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#173b2c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+  },
+  backGlyph: {
+    fontSize: 36,
+    lineHeight: 40,
+    fontWeight: '700',
+    marginTop: -4,
+  },
+  wordmark: {
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '900',
+    letterSpacing: -0.7,
+    fontStyle: 'italic',
+  },
+  topBarSpacer: {
+    width: 40,
+  },
+  headerDescription: {
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: Spacing.one,
+  },
+  progressContainer: {
+    marginBottom: Spacing.two,
+
+  },
+  progressText: {
+    marginTop: -25,
+    marginBottom: Spacing.one,
+    textAlign: 'center',
+    fontSize: 13,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  questionCard: {
+    borderRadius: 16,
+    padding: Spacing.four,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.08)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  questionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: Spacing.two,
+  },
+  optionsContainer: {
     marginTop: Spacing.one,
   },
-  optionChip: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+    backgroundColor: 'transparent',
+    marginBottom: Spacing.one,
+  },
+  optionSurface: {
+    flex: 1,
+    borderRadius: 11,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  optionButtonPressed: {
+    opacity: 0.78,
+  },
+  optionLabel: {
+    flex: 1,
+    fontSize: 15,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    marginTop: Spacing.three,
+  },
+  primaryAction: {
+    flex: 1,
+  },
+  secondaryAction: {
+    flex: 1,
+    borderWidth: 1,
   },
   errorText: {
     marginTop: Spacing.one,
     textAlign: 'center',
-  },
-  disclaimer: {
-    marginTop: Spacing.two,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: Spacing.three,
-  },
-  progressText: {
-    marginTop: Spacing.one,
-    marginBottom: Spacing.one,
-    textAlign: 'center',
-  },
-  summaryItem: {
-    marginVertical: Spacing.one,
+    fontSize: 13,
   },
   resultHeader: {
     marginTop: Spacing.two,
     marginBottom: Spacing.one,
     textAlign: 'center',
   },
+  summaryContainer: {
+    marginTop: Spacing.two,
+  },
+  summaryItem: {
+    marginVertical: Spacing.one,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  summaryQuestion: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: Spacing.half,
+  },
+  summaryAnswer: {
+    fontSize: 14,
+  },
   suggestionsSection: {
     marginVertical: Spacing.two,
   },
   suggestionsHeader: {
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: Spacing.one,
   },
   suggestionText: {
+    fontSize: 14,
     marginLeft: Spacing.two,
     marginBottom: Spacing.one,
+  },
+  disclaimer: {
+    marginTop: Spacing.two,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

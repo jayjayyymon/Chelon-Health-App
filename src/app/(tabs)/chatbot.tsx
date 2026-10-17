@@ -282,14 +282,14 @@ export default function ChatbotScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: isDark ? '#183b2d' : '#c9e8ca' }]} />
+      <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: isDark ? '#183b2d' : '#ffffff' }]} />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <View style={styles.keyboardArea}>
           <View style={styles.content}>
             <ChelonHeader />
 
             <View style={styles.heading}>
-              <ThemedText style={ [styles.headingTitle, { color: inkColor }] }>HEALTH CHATBOT</ThemedText>
+              <ThemedText style={ [styles.headingTitle, { color: inkColor, marginTop: -20 }] }>HEALTH CHATBOT</ThemedText>
               <ThemedText style={ [styles.headingSubtitle, { color: mutedInk }] }>Ask me about your health data and goals</ThemedText>
             </View>
 
