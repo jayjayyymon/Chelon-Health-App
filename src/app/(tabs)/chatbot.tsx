@@ -282,15 +282,15 @@ export default function ChatbotScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: isDark ? '#183b2d' : '#ffffff' }]} />
+      <View pointerEvents="none" style={[styles.heroBackground, { backgroundColor: isDark ? '#c4e8bf' : '#c4e8bf' }]} />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <View style={styles.keyboardArea}>
           <View style={styles.content}>
             <ChelonHeader />
 
             <View style={styles.heading}>
-              <ThemedText style={ [styles.headingTitle, { color: inkColor, marginTop: -20 }] }>HEALTH CHATBOT</ThemedText>
-              <ThemedText style={ [styles.headingSubtitle, { color: mutedInk }] }>Ask me about your health data and goals</ThemedText>
+              <ThemedText style={ [styles.headingTitle, { color: inkColor, marginTop: -10 }] }>HEALTH CHATBOT</ThemedText>
+              <ThemedText style={ [styles.headingSubtitle, { color: mutedInk, marginBottom:10 }] }>Ask me about your health data and goals</ThemedText>
             </View>
 
             <ScrollView
@@ -417,9 +417,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 190,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
+    height: 153,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   heading: {
     alignItems: 'center',

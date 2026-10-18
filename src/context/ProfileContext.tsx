@@ -9,7 +9,7 @@ type ProfileContextType = {
   resetProfile: () => Promise<boolean>;
 };
 
-const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+export const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 let profileOperationQueue = Promise.resolve();
 

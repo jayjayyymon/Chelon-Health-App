@@ -70,7 +70,7 @@ export type HealthDataContextType = {
   removeDietMeal: (id: string) => void;
 };
 
-const HealthDataContext = createContext<HealthDataContextType | undefined>(undefined);
+export const HealthDataContext = createContext<HealthDataContextType | undefined>(undefined);
 
 export const useHealthData = () => {
   const context = useContext(HealthDataContext);
